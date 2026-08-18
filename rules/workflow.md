@@ -163,3 +163,8 @@ Claude 凍結規格 → Codex Terra 實作（Sol 交件前審）→ Claude Sonne
 
 派 agent 前一律完整讀取 `<plugin>/rules/code-rules.md`，並把該檔「六、Subagent 專用」與
 「三、禁止」兩節原文傳入 subagent 的 prompt；不得每次重寫、不得摘要。
+
+### worktree 基準（強制）
+
+- 開平行線 worktree 後第一個動作＝驗證基準 commit 是目標分支 HEAD（`git log -1`＋
+  `git rev-list --count HEAD..<目標分支>` 必須為 0）；不是即先合流再開工，不得在過時基準上實作
