@@ -43,6 +43,12 @@ orca orchestration check --wait --types worker_done,escalation,question \
 - 沒有 task／dispatch 紀錄的工作，不得事後描述為已 orchestrated
 - Orca 內建「同一 task 連續三次 dispatch 失敗即熔斷」與第五節退件三次是兩套計數，分開記
 - `check --wait` 逾時或 `{count:0}` 視為檢查點，不得據此判定 worker 失敗或關掉 worker
+- 派工後 60 秒內讀 worker 終端驗證 prompt 已送出執行（agent CLI 開機中會把注入訊息卡在輸入框）；
+  卡住即補送 Enter；未驗證送出不得宣告已開工
+- 票面不得要求實作 worker 等待、催討或安排審查；worker 交件即發 worker_done 收工，
+  審查一律由協調者事後安排
+- Sol 內部審查與 Claude 獨立審查並行執行，兩邊發現合併為單輪退回；
+  審查期間不得讓實作 worker 閒置輪詢
 ## 三、模型分工
 
 ### Claude 側（想與審）

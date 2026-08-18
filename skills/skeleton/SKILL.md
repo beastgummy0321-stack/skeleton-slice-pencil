@@ -89,6 +89,8 @@ stack：Next.js+TS+Tailwind+shadcn/ui+tRPC+zod+Drizzle+SQLite 起步（後換 Po
   只落 BOARD.md `[ ]` 行（照建議遷移順序排）＋專案 CLAUDE.md 地標節，不另開地圖文件。
 - 使用者要的新畫面才走第 4 節生成；風格錨從既有 UI 蒸餾，禁用預設主題。
 - 既有模組不補登記；碰到才照 /slice C-舊 規則逐片遷。
+- 盤點時查驗依賴清單檔（requirements.txt／package.json＋lock）存在且可重建環境；
+  缺失即從實際 import 反推生成入庫——環境被重灌時無清單＝全站癱瘓，不得跳過。
 
 ## 6. 常駐三件套
 
