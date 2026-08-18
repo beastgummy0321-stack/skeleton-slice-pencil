@@ -1,82 +1,64 @@
 # skeleton-slice
 
-Claude Code 開發工作流：**骨架日一次、之後一片一片切**。
-給非工程背景的使用者：AI 一次問一題、給選項帶推薦、斷線重開能接著走。
+可攜的 Claude Code 開發工作流 plugin。一次安裝，整套帶走：
 
-## 內容
+```
+/setup-workflow（每台機器一次）  裝外部依賴＋環境檢查
+/skeleton     （每專案一次）    訪談樹引導 → 地基 → 全站可點原型 → 看板
+/slice        （之後的一切）    換真線、加功能、快改、斷點續跑
+```
 
-| 檔案 | 裝到哪 | 作用 |
-|---|---|---|
-| `skills/skeleton/` | `~/.claude/skills/skeleton/` | 骨架日：每專案跑一次。新專案建地基；舊專案接管（只加不改＋盤點） |
-| `skills/slice/` | `~/.claude/skills/slice/` | 之後的一切入口：自動分流（快改／五站切片）、斷點續跑、完成即刪看板行 |
-| `skills/container-contract/` | `~/.claude/skills/container-contract/` | 集裝箱憲章的觸發器 |
-| `container-contract.md` | `~/.claude/container-contract.md` | 集裝箱憲章本體：模組邊界五原則（唯一進入點、狀態不外洩、依賴單向、錯誤不穿牆、接口即契約） |
+給非工程背景的使用者：AI 一次問一題、給選項帶推薦、「不知道」永遠是合法答案、
+先拿到整個可點原型再逐片接真後端、斷線重開能接著走。
 
 ## 安裝
 
-Windows（PowerShell）：
-
-```powershell
-git clone https://github.com/beastgummy0321-stack/skeleton-slice.git
-Copy-Item -Recurse skeleton-slice\skills\* "$env:USERPROFILE\.claude\skills\"
-Copy-Item skeleton-slice\container-contract.md "$env:USERPROFILE\.claude\"
-```
-
-macOS／Linux：
-
 ```bash
-git clone https://github.com/beastgummy0321-stack/skeleton-slice.git
-cp -r skeleton-slice/skills/* ~/.claude/skills/
-cp skeleton-slice/container-contract.md ~/.claude/
+claude plugin marketplace add beastgummy0321-stack/skeleton-slice
+claude plugin install skeleton-slice@skeleton-slice
 ```
 
-裝完重開一個 Claude Code session，skill 即自動註冊。
+裝完重開 session，跑 `/setup-workflow` 裝外部依賴（會先列清單問你）。
 
-## 前置依賴（skill 會點名它們，需先裝）
+## 內容
 
-- [mattpocock/skills](https://github.com/mattpocock/skills)：grilling、to-tickets、tdd、domain-modeling
-- [leonxlnx/taste-skill](https://github.com/leonxlnx/taste-skill)：前端生成
-- [pbakaus/impeccable](https://github.com/pbakaus/impeccable)：前端打磨
-- [nextlevelbuilder/ui-ux-pro-max-skill](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill)：風格方向
+| 部件 | 作用 |
+|---|---|
+| `skills/skeleton/` | 初始化：訪談樹（grilling 引擎＋白話契約）→ 靜默地基 → 全站原型平行生成。新專案建置或舊專案接管（只加不改）皆用 |
+| `skills/slice/` | 日常入口：分流（快改／三站切片：補問凍結→做後端→換真線＋拔根測試）、斷點續跑 |
+| `skills/container-contract/` | 集裝箱憲章觸發器 |
+| `skills/setup-workflow/` | 外部依賴安裝精靈 |
+| `rules/` | 規範本體：container-contract（模組邊界五原則＋好找優先）、screen-contract（畫面契約）、workflow（多 Agent／Codex 分工＋無 Orca fallback）、reuse-first（不重複造輪）、code-rules（Code 階段硬規定） |
+| `hooks/session-rules.mjs` | SessionStart 把 workflow／reuse-first／code-rules 全文注入每個 session |
+| `hooks/load-budget.mjs` | PostToolUse 規範檔閘門：500 行上限＋勸導詞攔截 |
 
-## 提示詞用法
+## 外部依賴（/setup-workflow 代裝，先問過你）
 
-**1. 全新專案（空資料夾裡開第一句）**
+- [DietrichGebert/ponytail](https://github.com/DietrichGebert/ponytail)：最小實作紀律
+- [ayghri/i-have-adhd](https://github.com/ayghri/i-have-adhd)：輸出格式紀律
+- [mattpocock/skills](https://github.com/mattpocock/skills)（官方 marketplace `mattpocock-skills`）：grilling、to-tickets、tdd、domain-modeling、wizard、research、to-questionnaire
 
-```
-/skeleton 全新專案，照骨架日流程帶我走。
-一次問我一題；要安裝任何東西，先列清單給我點頭。
-```
+選配（有裝就用，沒裝跳過）：Orca＋Codex（workflow.md 的派工分工；查無時自動 fallback 內建 subagent）、
+[leonxlnx/taste-skill](https://github.com/leonxlnx/taste-skill)、[pbakaus/impeccable](https://github.com/pbakaus/impeccable)、
+[nextlevelbuilder/ui-ux-pro-max-skill](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill)：前端生成與打磨。
 
-**2. 舊專案重啟（有舊看板、舊 grill 文檔堆積）**
+## 已有全域規範的機器注意
 
-```
-/skeleton 接管舊專案。原始碼只加不改。
-舊的 grill 文檔、舊看板、工程紀錄一律不要讀，先問我要封存還是刪除。
-盤點完成後，給我一份全新的看板和建議的遷移順序。
-```
-
-**3. 日常開發（骨架日之後的一切）**
-
-```
-/slice 我想要＜用白話描述你要的功能或修改＞
-```
-
-續跑只要兩個字：
-
-```
-/slice 繼續
-```
+`~/.claude/CLAUDE.md` 已 @ 匯入 workflow.md／reuse-first.md／code-rules.md 者，
+與本 plugin 的 SessionStart 注入重複——二選一，移除 @ 匯入行或不啟用本 plugin hook。
 
 ## 流程一頁圖
 
 ```
 /skeleton（每專案一次）
-  地基＋看板 BOARD.md＋專案 CLAUDE.md＋機器糾察隊
+  訪談樹：給誰用→最常做什麼→功能逐項要不要（附「不知道」出口）→挑風格圖
+  地基：stack＋模組軌道＋depcruise 證紅＋冒煙證紅（靜默，安裝先點頭）
+  原型：風格錨 1 頁挑 1 版 → 每頁一個 subagent 平行生成 → 全站可點、四態可切
+  交付：BOARD.md 寫滿 [ ]，逐片等 /slice 換真線。原型階段加刪功能免費。
 
 /slice（之後的一切）
-  分流：A 只改樣式→直接改｜B 改行為不動合約→快改｜C 動合約→五站
-  五站：①選畫面 → ②定形狀(只問 UNKNOWN) → ③假接線(四態原型)
-        → ④做後端(照凍結 schema) → ⑤換真線(拔假資料，前端零改動)
+  分流：A 樣式直改｜B 快改｜C 三站｜新畫面先補原型頁｜多畫面拆片
+  三站：①補問凍結（清 UNKNOWN→schema 凍結）→ ②做後端（TDD＋獨立驗收）
+        → ③換真線（前端零 diff＋拔根測試）
   收工：看板刪行、git 當檔案館、過程檔即刪
 ```

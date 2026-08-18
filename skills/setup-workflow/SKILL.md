@@ -1,0 +1,40 @@
+---
+name: setup-workflow
+description: 安裝本工作流的外部依賴 plugin（ponytail、i-have-adhd、mattpocock-skills）並檢查環境（node、Orca／Codex）。換新機器或給他人安裝本 plugin 後跑一次。觸發：setup-workflow、安裝工作流依賴、環境檢查。
+disable-model-invocation: true
+---
+
+# /setup-workflow 環境安裝（每台機器一次）
+
+## 一、檢查（唯讀，先做完再問）
+
+逐項檢查並列結果表（項目｜狀態｜影響）：
+
+1. `node --version`——本 plugin 的 hooks 依賴 node；查無 → 規範注入與規範檔閘門失效，skill 本體仍可用
+2. `claude plugin list` 含 `ponytail`、`i-have-adhd`、`mattpocock-skills` 與否
+3. `orca status --json`——查無 orca 或無 Codex → 告知：workflow.md 第零節 fallback 生效，派工改用內建 subagent
+
+## 二、安裝（列清單，使用者點頭才執行；未點頭不得裝任何東西）
+
+缺哪個裝哪個：
+
+```bash
+claude plugin marketplace add DietrichGebert/ponytail
+claude plugin install ponytail@ponytail
+
+claude plugin marketplace add ayghri/i-have-adhd
+claude plugin install i-have-adhd@i-have-adhd
+
+claude plugin install mattpocock-skills@claude-plugins-official
+```
+
+## 三、驗證（裝完必做）
+
+1. `claude plugin list` 逐項確認出現。
+2. 提醒使用者重開 session 讓 hooks 生效。
+3. 重開後開場廣播出現「skeleton-slice 全域規範」字樣＝注入成功；沒出現 → 查 node 是否在 PATH。
+
+## 四、衝突排除
+
+`~/.claude/CLAUDE.md` 已用 @ 匯入 workflow.md／reuse-first.md／code-rules.md 的機器：
+本 plugin 的 SessionStart 注入與其重複 → 二選一，把 @ 匯入行移除或停用本 plugin 的 hook，不得雙載。

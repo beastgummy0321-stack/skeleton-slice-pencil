@@ -1,0 +1,11 @@
+{
+  "name": "skeleton-slice",
+  "owner": { "name": "beastgummy0321-stack" },
+  "plugins": [
+    {
+      "name": "skeleton-slice",
+      "source": "./",
+      "description": "可攜開發工作流：/skeleton 初始化（訪談樹＋全站可點原型）、/slice 換真線與日常開發、集裝箱憲章、多 Agent 分工規範注入。"
+    }
+  ]
+}
