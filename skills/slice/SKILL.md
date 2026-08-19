@@ -33,7 +33,14 @@ description: 做下一片——初始化之後的一切開發入口：換真線�
 | B | 動行為，schema 與模組進入點皆不動 | 快改：確認「哪個畫面＋期望行為」→ 改 → 四態抽查 → 回報。不進看板 |
 | C | 換真線／動 schema／動進入點 | 開片（或認領既有 `[ ]` 行）→ 三站 |
 | 新畫面 | 原型裡沒有的頁 | 先照 /skeleton 第 4 節同風格錨生成假資料版＋看板加行，再走 C |
-| 大 | 願望涉及 >1 畫面或預估 >1 票 | 全切後打：先 /to-spec 出規格書 → /to-tickets 垂直切完全部票（每票標被誰擋）→ 使用者點頭票單 → 前線並行派工（workflow.md 七），每票內走 C 三站 |
+| 大 | 願望涉及 >1 畫面或預估 >1 票 | 全切後打＋雙台：先 /to-spec 出規格書 → /to-tickets 垂直切完全部票 → 產出 pipeline.json（approved=false）→ 使用者點頭後改 true → 開調度台交接派工 → 立即引導使用者 grill 下一個功能區塊（workflow.md 七＋十） |
+
+大路線交接動作（對話台做完就回到使用者身上，全程使用者零操作）：
+1. pipeline.json 寫齊每票的 branch／blocked_by／shared_files／migration 欄（機器閘門依據）。
+2. 經 Orca 開調度台：新 Claude 終端、啟動環境變數 `SKELETON_ROLE=dispatch`、
+   注入一句「讀 <effort 目錄>/pipeline.json 與 workflow.md 十，接手調度循環」。
+3. 交接完成即問使用者：「工人開工了，趁等待把下一塊〈名〉問清楚？」——不得讓使用者乾等。
+4. 每個 grill 段落結束時讀 `escalations.md`，有項目先帶使用者裁決再續問。
 
 B 路線中途發現要動 schema → 當場升級 C，告知使用者。
 

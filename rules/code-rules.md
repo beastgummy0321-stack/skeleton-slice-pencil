@@ -75,3 +75,6 @@
 | git-restore-guard | 執行 Bash／PowerShell 前 | `git restore` 一律擋、`git checkout <路徑>` 擋、切分支放行。要丟棄未 commit 改動先問使用者 |
 | load-budget 閘門 A | 寫入任何 .md 後 | CLAUDE.md／AGENTS.md 及其點名的 .md 合計不得超過 500 行 |
 | load-budget 閘門 B | 寫入任何 .md 後 | 規範檔不得出現勸導詞（「應該」「盡量」「視情況」等）。只寫可判定禁令句 |
+| pipeline 派工閘 | worker-start／dispatch --inject 前 | pipeline.json mode=dual 時：未點頭（approved!=true）、擋票未全合併、共用檔與在飛票重疊、migration 併飛、對話台派工、指令未引用票檔——一律擋 |
+| pipeline 合併閘 | git merge 前 | mode=dual 時：票未過審、一次多線、migration 撞號、未知分支、對話台合併——一律擋（origin/* 遠端同步豁免） |
+| pipeline 角色閘 | Write／Edit 前 | mode=dual 時：調度台改規格票擋；對話台於在飛期間寫 pipeline.json 擋（新票走 pipeline-inbox.json） |

@@ -202,3 +202,34 @@ Claude 凍結規格 → Codex Terra 實作（Sol 交件前審）→ Claude Sonne
 
 - 開平行線 worktree 後第一個動作＝驗證基準 commit 是目標分支 HEAD（`git log -1`＋
   `git rev-list --count HEAD..<目標分支>` 必須為 0）；不是即先合流再開工，不得在過時基準上實作
+
+## 十、雙台分工（多線並行時強制）
+
+多線並行啟用時（`.scratch/<effort>/pipeline.json` 存在且 `mode=dual`），主線工作分兩台。
+兩台皆由 agent 自行開設與維運；使用者只回答 grill 與點頭，不做任何操作。
+
+- **對話台**（使用者面前的 session）：只做 grill、/to-spec、/to-tickets、票單點頭、
+  退件仲裁、驗工單。派工、掛 worker 等待器、合併主幹一律禁止（閘門攔截）。
+  派工交接完成後立即引導使用者 grill 下一個功能區塊，不得讓使用者等待工程進度。
+- **調度台**（agent 經 Orca 另開的 Claude 終端，啟動時設環境變數 `SKELETON_ROLE=dispatch`）：
+  循環執行「等 worker_done → 安排審查 → 合併 → 更新 pipeline.json 與看板 → 派下一張前線票」。
+  修改規格票與規格檔一律禁止（閘門攔截）。
+- 兩台不互傳訊息；上下文以檔案交換：票檔、看板、pipeline.json、
+  escalation 檔（`.scratch/<effort>/escalations.md`）。
+- 需要使用者裁決的事（spec 洞、三次停止、花錢、需批准項）由調度台寫入 escalation 檔並停該票；
+  對話台在每個 grill 段落結束時讀 escalation 檔，有項目即帶使用者裁決。
+- 對話台新增票寫 `pipeline-inbox.json`；pipeline.json 狀態欄唯一寫手＝調度台（閘門攔截）。
+- 調度台上下文耗盡即自行收尾結束；新調度台讀 pipeline.json＋看板即可接手，不做對話交接。
+
+### pipeline.json（機器閘門依據，/to-tickets 收尾時由對話台產出）
+
+```json
+{"mode":"dual","approved":false,"tickets":[{"id":"01","file":"issues/01-x.md",
+ "branch":"line-01","status":"pending","blocked_by":[],"shared_files":[],"migration":null}]}
+```
+
+- status 取值：pending｜dispatched｜approved｜merging｜merged｜stopped
+- approved 由對話台在使用者點頭後改 true；false 時派工閘擋下全部派工
+- 檔名含 review 的審查票不入 pipeline.json、不受派工閘管
+- 派工指令的 spec 必須引用票檔路徑（`.scratch/<effort>/issues/*.md`），否則派工閘擋下
+

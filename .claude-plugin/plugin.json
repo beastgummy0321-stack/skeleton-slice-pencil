@@ -1,6 +1,6 @@
 {
   "name": "skeleton-slice",
-  "version": "2.1.2",
+  "version": "2.2.0",
   "description": "可攜開發工作流：/skeleton 初始化（訪談樹＋全站可點原型）、/slice 換真線與日常開發、集裝箱憲章（模組邊界＋好找優先）、多 Agent／Codex 分工、reuse-first、code-rules 全套規範隨 plugin 注入。",
   "author": { "name": "beastgummy0321-stack" }
 }
