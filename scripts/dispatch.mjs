@@ -15,8 +15,10 @@ const lineCount = (path) => {
 
 const ROLE_CONFIG = {
   impl: { model: 'gpt-5.6-terra', sandbox: 'workspace-write', effort: 'high' },
-  review: { model: 'gpt-5.6-sol', sandbox: 'read-only', effort: 'high' },
-  scout: { model: 'gpt-5.6-luna', sandbox: 'read-only', effort: 'low' },
+  // review／scout 的可寫根＝報告目錄（見 buildArgs 的 cwdPath），worktree 仍不可寫：
+  // read-only 沙箱連審查報告都寫不出來，--add-dir 也無法覆寫唯讀，故改用 workspace-write ＋ 縮可寫根。
+  review: { model: 'gpt-5.6-sol', sandbox: 'workspace-write', effort: 'high' },
+  scout: { model: 'gpt-5.6-luna', sandbox: 'workspace-write', effort: 'low' },
 };
 
 const COMMON_PREFIX = '本次為 exec 派工：禁跑 orca 指令；不得 git commit、git push；npm 用 npm.cmd。';
@@ -95,21 +97,21 @@ function setupWorktree({ projectRoot, branch, base, role }) {
   return worktreePath;
 }
 
-function buildSpec({ role, round, ticketPath, reportPath, reviewsPath, prescanPath }) {
+function buildSpec({ role, round, ticketPath, reportPath, reviewsPath, prescanPath, worktreePath }) {
   if (role === 'impl') {
     const reviewPrefix = round >= 2 ? `先讀 ${reviewsPath}；` : '';
     return `${COMMON_PREFIX}讀 ${ticketPath} 後開工；${reviewPrefix}完整報告寫入 ${reportPath}；交件前逐條自核票面驗收清單，報告附對照表；最後回覆只准兩行：結論一行＋報告檔路徑一行。`;
   }
   if (role === 'review') {
     const reviewPrefix = round >= 2 ? `只驗 ${reviewsPath} 已列退件項＋一項本輪新破壞檢查；` : '';
-    return `${COMMON_PREFIX}你在唯讀沙箱中審查，不得改碼；讀 ${ticketPath} 與 ${reportPath}；${reviewPrefix}不重跑完整套件，測試結果引用交件方報告並註明是引用；審查報告寫入 ${reviewsPath}；最後回覆只准兩行：通過或退件一行＋報告檔路徑一行。`;
+    return `${COMMON_PREFIX}你不得改碼（機器強制：${worktreePath} 不可寫）；受審程式碼在 ${worktreePath}；讀 ${ticketPath} 與 ${reportPath}；${reviewPrefix}不重跑完整套件，測試結果引用交件方報告並註明是引用；審查報告寫入 ${reviewsPath}；最後回覆只准兩行：通過或退件一行＋報告檔路徑一行。`;
   }
-  return `${COMMON_PREFIX}讀 ${ticketPath}；唯讀預掃受影響檔，摘要一頁寫入 ${prescanPath}；最後回覆只准兩行。`;
+  return `${COMMON_PREFIX}讀 ${ticketPath}；唯讀預掃 ${worktreePath} 的受影響檔，摘要一頁寫入 ${prescanPath}；最後回覆只准兩行。`;
 }
 
-function buildArgs({ role, cfg, worktreePath, addDirPath, lastMessagePath, spec }) {
-  const args = ['exec', '-m', cfg.model, '-s', cfg.sandbox, '-C', worktreePath, '--skip-git-repo-check', '-c', `model_reasoning_effort="${cfg.effort}"`];
-  if (role === 'impl') args.push('--add-dir', addDirPath);
+function buildArgs({ cfg, cwdPath, extraDirs, lastMessagePath, spec }) {
+  const args = ['exec', '-m', cfg.model, '-s', cfg.sandbox, '-C', cwdPath, '--skip-git-repo-check', '-c', `model_reasoning_effort="${cfg.effort}"`];
+  for (const dir of extraDirs) args.push('--add-dir', dir);
   args.push('-o', lastMessagePath, spec);
   return args;
 }
@@ -168,10 +170,13 @@ export async function dispatch({ cwd, effort, ticketId, role = 'impl', redispatc
       const reviewsPath = join(scratch, 'reviews', `${ticket.id}.md`);
       const prescanPath = join(scratch, 'reports', `${ticket.id}-prescan.md`);
       const lastMessagePath = join(scratch, 'reports', `${ticket.id}-r${round}-${role}-last.txt`);
-      const spec = buildSpec({ role, round, ticketPath, reportPath, reviewsPath, prescanPath });
+      const spec = buildSpec({ role, round, ticketPath, reportPath, reviewsPath, prescanPath, worktreePath });
       const cfg = ROLE_CONFIG[role];
-      const addDirPath = role === 'impl' ? join(cwd, '.git', 'worktrees', ticket.branch) : null;
-      const args = buildArgs({ role, cfg, worktreePath, addDirPath, lastMessagePath, spec });
+      const reportsDir = join(scratch, 'reports');
+      const reviewsDir = join(scratch, 'reviews');
+      const cwdPath = role === 'impl' ? worktreePath : role === 'review' ? reviewsDir : reportsDir;
+      const extraDirs = role === 'impl' ? [join(cwd, '.git', 'worktrees', ticket.branch), reportsDir] : [];
+      const args = buildArgs({ cfg, cwdPath, extraDirs, lastMessagePath, spec });
 
       if (role === 'impl') { ticket.status = 'dispatched'; ticket.round = round; }
       else if (role === 'review') { ticket.review_round = Number(ticket.review_round || 0) + 1; }
@@ -316,6 +321,7 @@ async function runSelfTestBody(root) {
   const expectedArgs1 = [
     'exec', '-m', 'gpt-5.6-terra', '-s', 'workspace-write', '-C', worktreePath1, '--skip-git-repo-check',
     '-c', 'model_reasoning_effort="high"', '--add-dir', join(root, '.git', 'worktrees', 'feature-01'),
+    '--add-dir', join(scratch, 'reports'),
     '-o', lastMessagePath1,
     `${COMMON_PREFIX}讀 ${resolve(scratch, 'issues/01.md')} 後開工；完整報告寫入 ${reportPath1}；交件前逐條自核票面驗收清單，報告附對照表；最後回覆只准兩行：結論一行＋報告檔路徑一行。`,
   ];
@@ -377,10 +383,10 @@ async function runSelfTestBody(root) {
   const reviewSpec = reviewCalls[0][reviewCalls[0].length - 1];
   const reportPath2 = join(scratch, 'reports', '01-r2.md');
   const reviewsPath = join(scratch, 'reviews', '01.md');
-  const expectedReviewSpec = `${COMMON_PREFIX}你在唯讀沙箱中審查，不得改碼；讀 ${resolve(scratch, 'issues/01.md')} 與 ${reportPath2}；只驗 ${reviewsPath} 已列退件項＋一項本輪新破壞檢查；不重跑完整套件，測試結果引用交件方報告並註明是引用；審查報告寫入 ${reviewsPath}；最後回覆只准兩行：通過或退件一行＋報告檔路徑一行。`;
+  const expectedReviewSpec = `${COMMON_PREFIX}你不得改碼（機器強制：${worktreePath1} 不可寫）；受審程式碼在 ${worktreePath1}；讀 ${resolve(scratch, 'issues/01.md')} 與 ${reportPath2}；只驗 ${reviewsPath} 已列退件項＋一項本輪新破壞檢查；不重跑完整套件，測試結果引用交件方報告並註明是引用；審查報告寫入 ${reviewsPath}；最後回覆只准兩行：通過或退件一行＋報告檔路徑一行。`;
   if (reviewSpec !== expectedReviewSpec) throw new Error('review spec 不逐字相等（round≥2 前綴）');
-  const expectedReviewArgs = ['exec', '-m', 'gpt-5.6-sol', '-s', 'read-only', '-C', worktreePath1, '--skip-git-repo-check', '-c', 'model_reasoning_effort="high"', '-o', join(scratch, 'reports', '01-r2-review-last.txt'), reviewSpec];
-  if (JSON.stringify(reviewCalls[0]) !== JSON.stringify(expectedReviewArgs)) throw new Error('review 旗標序不逐字相符（不應有 --add-dir）');
+  const expectedReviewArgs = ['exec', '-m', 'gpt-5.6-sol', '-s', 'workspace-write', '-C', join(scratch, 'reviews'), '--skip-git-repo-check', '-c', 'model_reasoning_effort="high"', '-o', join(scratch, 'reports', '01-r2-review-last.txt'), reviewSpec];
+  if (JSON.stringify(reviewCalls[0]) !== JSON.stringify(expectedReviewArgs)) throw new Error('review 旗標序不逐字相符（可寫根須為 reviews 目錄，且不應有 --add-dir）');
   const savedAfterReview = JSON.parse(readFileSync(pipelinePath, 'utf8')).tickets[0];
   if (savedAfterReview.review_round !== 1) throw new Error('review_round 未落盤');
   if (savedAfterReview.status !== 'dispatched') throw new Error('review 不應改動 status');
@@ -391,9 +397,9 @@ async function runSelfTestBody(root) {
   if (!scoutResult.ok) throw new Error('scout 派工失敗');
   const scoutSpec = scoutCalls[0][scoutCalls[0].length - 1];
   const prescanPath = join(scratch, 'reports', '01-prescan.md');
-  const expectedScoutSpec = `${COMMON_PREFIX}讀 ${resolve(scratch, 'issues/01.md')}；唯讀預掃受影響檔，摘要一頁寫入 ${prescanPath}；最後回覆只准兩行。`;
+  const expectedScoutSpec = `${COMMON_PREFIX}讀 ${resolve(scratch, 'issues/01.md')}；唯讀預掃 ${worktreePath1} 的受影響檔，摘要一頁寫入 ${prescanPath}；最後回覆只准兩行。`;
   if (scoutSpec !== expectedScoutSpec) throw new Error('scout spec 不逐字相等');
-  const expectedScoutArgs = ['exec', '-m', 'gpt-5.6-luna', '-s', 'read-only', '-C', worktreePath1, '--skip-git-repo-check', '-c', 'model_reasoning_effort="low"', '-o', join(scratch, 'reports', '01-r1-scout-last.txt'), scoutSpec];
+  const expectedScoutArgs = ['exec', '-m', 'gpt-5.6-luna', '-s', 'workspace-write', '-C', join(scratch, 'reports'), '--skip-git-repo-check', '-c', 'model_reasoning_effort="low"', '-o', join(scratch, 'reports', '01-r1-scout-last.txt'), scoutSpec];
   if (JSON.stringify(scoutCalls[0]) !== JSON.stringify(expectedScoutArgs)) throw new Error('scout 旗標序不逐字相符');
   const savedAfterScout = JSON.parse(readFileSync(pipelinePath, 'utf8')).tickets[0];
   if (savedAfterScout.scout_round !== 1) throw new Error('scout_round 未落盤');
