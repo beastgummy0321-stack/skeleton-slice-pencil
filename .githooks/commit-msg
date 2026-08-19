@@ -1,0 +1,12 @@
+#!/bin/sh
+# 擋下沒有關聯 GitHub Issue 的 commit。
+# 用法：先 `gh issue create` 拿到編號，commit message 帶 `#<編號>`（如 Fixes #12 / Refs #12）。
+
+MSG_FILE="$1"
+
+if ! grep -qE '#[0-9]+' "$MSG_FILE"; then
+  echo "commit 被擋：訊息裡沒有 #issue編號" >&2
+  echo "先建 Issue：gh issue create --title \"...\" --body \"...\"" >&2
+  echo "再把編號寫進 commit message，例如：Fixes #12 或 Refs #12" >&2
+  exit 1
+fi
