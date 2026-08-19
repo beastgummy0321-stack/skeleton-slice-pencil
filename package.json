@@ -1,0 +1,8 @@
+{
+  "name": "skeleton-slice",
+  "version": "2.5.0",
+  "private": true,
+  "scripts": {
+    "test": "node scripts/dispatch.mjs --self-test && node scripts/check.mjs --self-test && node hooks/gates.test.mjs && node hooks/budget.test.mjs"
+  }
+}
