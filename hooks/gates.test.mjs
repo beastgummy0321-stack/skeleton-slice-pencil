@@ -35,6 +35,10 @@ try {
   const issue = join(root, '.scratch', 'x', 'issues', '01.md');
   expect(run({ cwd: root, tool_name: 'Write', tool_input: { file_path: issue } }, { SKELETON_ROLE: 'dispatch' }), 2, 'dispatch Write issue');
   expect(run({ cwd: root, tool_name: 'Edit', tool_input: { file_path: issue } }, { SKELETON_ROLE: 'dispatch' }), 2, 'dispatch Edit issue');
+  const hotfixIssue = join(root, '.scratch', 'x', 'issues', '05-hotfix-main-red.md');
+  expect(run({ cwd: root, tool_name: 'Write', tool_input: { file_path: hotfixIssue } }, { SKELETON_ROLE: 'dispatch' }), 0, 'dispatch Write hotfix issue');
+  const nonHotfixIssue = join(root, '.scratch', 'x', 'issues', '05-fix.md');
+  expect(run({ cwd: root, tool_name: 'Write', tool_input: { file_path: nonHotfixIssue } }, { SKELETON_ROLE: 'dispatch' }), 2, 'dispatch Write non-hotfix issue still blocked');
   writePipeline([{ id: '01', status: 'dispatched' }]);
   expect(run({ cwd: root, tool_name: 'Write', tool_input: { file_path: join(root, '.scratch', 'x', 'pipeline.json') } }), 2, 'single writer pipeline');
   expect(run({ cwd: root, tool_name: 'Write', tool_input: { file_path: join(root, '.scratch', 'x', 'pipeline.json') } }, { SKELETON_ROLE: 'dispatch' }), 0, 'dispatch writes pipeline');

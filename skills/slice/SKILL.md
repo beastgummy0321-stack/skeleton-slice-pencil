@@ -40,7 +40,7 @@ description: 做下一片——初始化之後的一切開發入口：換真線�
 2. 經 Orca 開調度台：新 Claude 終端、啟動環境變數 `SKELETON_ROLE=dispatch`、
    注入一句「讀 <effort 目錄>/pipeline.json 與 workflow.md 十一，使用 scripts/dispatch.mjs、scripts/check.mjs 接手調度循環」。
 3. 交接完成即問使用者：「工人開工了，趁等待把下一塊〈名〉問清楚？」——不得讓使用者乾等。
-4. 每個 grill 段落結束時讀 `escalations.md`，有項目先帶使用者裁決再續問。
+4. 每個回合開頭讀 `escalations.md`，不限 grill 段落結束，有項目先帶使用者裁決再續問。
 
 B 路線中途發現要動 schema → 當場升級 C，告知使用者。
 

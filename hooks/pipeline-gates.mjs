@@ -52,7 +52,7 @@ if (tool === 'Write' || tool === 'Edit') {
     }
     process.exit(0);
   }
-  if (role === 'dispatch' && /\/\.scratch\/[^/]+\/issues\/[^/]+\.md$/.test(filePath) && !filePath.includes('review')) {
+  if (role === 'dispatch' && /\/\.scratch\/[^/]+\/issues\/[^/]+\.md$/.test(filePath) && !filePath.includes('review') && !basename(filePath).includes('hotfix')) {
     block('角色閘：調度台不得修改規格票（工頭不改規格）。規格問題寫入同目錄 escalations.md 並停該票，由對話台帶使用者裁決。');
   }
   process.exit(0);

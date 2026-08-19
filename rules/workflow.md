@@ -39,10 +39,14 @@ node scripts/check.mjs --cwd <projectRoot> --effort <effort> --timeout-ms 600000
 
 - dual 模式下 `worker-start`、`dispatch --inject`、`orchestration check` 只准由兩支 wrapper 呼叫；裸指令一律不得執行
 - 實作派 `gpt-5.6-terra`、審查派 `gpt-5.6-sol`、探查派 `gpt-5.6-luna`
+- review／scout 派工一律走 `scripts/dispatch.mjs --role review|scout`（模型由 wrapper 決定：
+  review=gpt-5.6-sol、scout=gpt-5.6-luna）；裸 `worker-start` 照舊禁止
 - 宣告「已派工」前先驗：`orca orchestration dispatch-show --task <task_id> --json`
 - 沒有 task／dispatch 紀錄的工作，不得事後描述為已 orchestrated
 - Orca 內建「同一 task 連續三次 dispatch 失敗即熔斷」與第五節退件三次是兩套計數，分開記
 - `check --wait` 逾時或 `{count:0}` 視為檢查點，不得據此判定 worker 失敗或關掉 worker
+- 連續 3 次空檢查點（check.mjs 計數提示）→ 必須跑 `dispatch-show`＋`terminal read` 查活；
+  查得 worker 已死 → release 後以 `--redispatch` 重派、round 加 1、不計退件
 - dispatch wrapper 必須先以 `dispatch-show` 驗證派工存在，驗證失敗不得寫 pipeline.json
 - 票面不得要求實作 worker 等待、催討或安排審查；worker 交件即發 worker_done 收工，
   審查一律由協調者事後安排
@@ -51,7 +55,7 @@ node scripts/check.mjs --cwd <projectRoot> --effort <effort> --timeout-ms 600000
 - 簽收只准由 check wrapper 依 pipeline.json 的 pending_ack 執行；deliveryId 取自該批 wrapper
   回傳的 deliveryId，缺 ID 不得簽收，否則同一批訊息會重播成假交件
 - 同一個 run 同時只准一個 check wrapper 等待器；已有等待器回 waiter_exists 時，必須讀既有
-  等待器的輸出，不得改用輪詢
+  等待器的輸出，不得改用輪詢；等待器行程已不存在時，直接開新等待器接手，不得繼續等舊等待器
 
 ## 三、模型分工
 
@@ -95,13 +99,15 @@ node scripts/check.mjs --cwd <projectRoot> --effort <effort> --timeout-ms 600000
 - 實作紀律三條（票面原文照抄給 worker）：金流／解析／狀態機接縫照票面預定接縫走 TDD；
   開發中只跑型別檢查＋受影響單檔測試；完整套件只在交件前跑一次。
   worker 自行宣告審查通過或自行合併主幹一律禁止，審查與合併歸協調者
+- 票面欄位不適用者，寫「N/A＋原因一句」即為達成；審查不得以 N/A 欄位判 DoR 未達成
 
 ## 五、退件制度（強制）
 
 ### 計數口徑
 
 只有「Codex 交件 → Claude 退回」算一次。Codex 內部 Sol 審查的來回不計數。
-同一票 Sol 審查以兩輪為限：首輪交件審與最終合併前終審；中間退件輪複驗由 Claude 側審查者單審。
+零退件票，Sol 只上場一次：首輪審即終審，合併前不得再排 Sol。
+有退件票的終審，Sol 只驗退件項回歸＋一項新破壞檢查，全套重跑禁止；中間退件輪複驗由 Claude 側審查者單審。
 
 ### 分類（退件時必填，二選一）
 
@@ -109,6 +115,7 @@ node scripts/check.mjs --cwd <projectRoot> --effort <effort> --timeout-ms 600000
 - `spec`：規格本身有洞、Codex 照做但方向錯 → **不計數**，中止本票、回第四節重凍規格、計數歸零
 
 第二次退件時 Claude 必須明確宣告本票卡點屬 `impl` 或 `spec`，不得拖到第三次。
+同一票 spec 重凍以 2 次為限；第 3 次觸發即停票，交使用者裁決。
 
 一般 `impl` 退件重派必須由 dispatch wrapper 先 release 舊 dispatch；每輪必須新建 task 與 worker，
 round 必須加 1；不得使用 `--retry-of`。
@@ -118,6 +125,7 @@ round 必須加 1；不得使用 `--retry-of`。
 由退件方（Claude）寫，實作方不得修改。放專案指定的 issue 目錄；
 專案未指定時放 `.scratch/reviews/<票號>.md`。每次退件寫入：
 退件序號、分類、引用的驗收條目、Codex 這次改了什麼。
+退件單必填「已否決方案」欄：上一輪試了什麼、為何不行，一行一條；缺此欄的退件單不得作為重派依據。
 
 ### 三次停止
 
@@ -187,6 +195,8 @@ Claude 凍結規格 → Codex Terra 實作（Sol 交件前審）→ Claude Sonne
 - 免 migration、不碰金流、純黏合的批次，做後端與換真線可合併一票交付；雙審查不得因此省略
 - heartbeat 訊息只簽收不回覆；等待迴圈以 worker_done、escalation、question 過濾，
   不得因 heartbeat 中斷排程或讀取 worker 終端
+- 主幹紅燈或合併衝突 → 調度台開 hotfix 票（檔名含 hotfix），寫入 pipeline.json 佇列最前、
+  blocked_by 空，經 wrapper 派工修復；hotfix 在飛期間其他線不得合併
 
 ### 多模組平行施工四護欄（強制）
 
@@ -251,7 +261,7 @@ Codex worker 一律讀專案 AGENTS.md 的 `skeleton-slice:rules` 內嵌區塊�
 - 兩台不互傳訊息；上下文以檔案交換：票檔、看板、pipeline.json、
   escalation 檔（`.scratch/<effort>/escalations.md`）。
 - 需要使用者裁決的事（spec 洞、三次停止、花錢、需批准項）由調度台寫入 escalation 檔並停該票；
-  對話台在每個 grill 段落結束時讀 escalation 檔，有項目即帶使用者裁決。
+  對話台每個回合開頭讀 escalation 檔，不限 grill 段落結束，有項目即帶使用者裁決。
 - 對話台新增票寫 `pipeline-inbox.json`；pipeline.json 狀態欄唯一寫手＝調度台（閘門攔截）。
 - 調度台上下文耗盡即自行收尾結束；新調度台讀 pipeline.json＋看板即可接手，不做對話交接。
 
