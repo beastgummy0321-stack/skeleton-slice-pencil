@@ -104,7 +104,9 @@ stack：Next.js+TS+Tailwind+shadcn/ui+tRPC+zod+Drizzle+SQLite 起步（後換 Po
 
 2. 專案 `CLAUDE.md`：抄 `assets/project-claude-template.md` 填空後寫入。
    專案已有 CLAUDE.md → 停下問使用者怎麼併，不得覆蓋。
-3. 開場廣播由專案 CLAUDE.md 第一節承擔（開 session 先讀 BOARD.md、有 [>] 主動報站）。
+3. 產 AGENTS.md 時必須加入 `<!-- skeleton-slice:rules:begin -->` 與 `<!-- skeleton-slice:rules:end -->`；
+   標記間內容必須逐字放入本 plugin `rules/code-rules.md` 的第三節與第六節，再接 `rules/container-contract.md` 全文。
+4. 開場廣播由專案 CLAUDE.md 第一節承擔（開 session 先讀 BOARD.md、有 [>] 主動報站）。
 
 ## 7. 收工檢核（全過才報完工）
 

@@ -33,29 +33,25 @@ Claude 與 Codex 之間不得直接呼叫對方 CLI、不得自行開 PTY、不�
 
 ```bash
 orca orchestration run-create   --objective "<本輪目標>" --json
-orca orchestration task-create  --spec "<票：規格＋驗收清單>" --json
-orca orchestration worker-start --task <task_id> --worktree current \
-     --agent codex --model gpt-5.6-terra --effort high --json
-orca orchestration check --wait --types worker_done,escalation,question \
-     --timeout-ms 600000 --json
+node scripts/dispatch.mjs --ticket <票號> --cwd <projectRoot> --effort <effort>
+node scripts/check.mjs --cwd <projectRoot> --effort <effort> --timeout-ms 600000
 ```
 
-- `worker-start` 一律明寫 `--model`，不得依賴 Codex 端 `config.toml` 的預設值
+- dual 模式下 `worker-start`、`dispatch --inject`、`orchestration check` 只准由兩支 wrapper 呼叫；裸指令一律不得執行
 - 實作派 `gpt-5.6-terra`、審查派 `gpt-5.6-sol`、探查派 `gpt-5.6-luna`
 - 宣告「已派工」前先驗：`orca orchestration dispatch-show --task <task_id> --json`
 - 沒有 task／dispatch 紀錄的工作，不得事後描述為已 orchestrated
 - Orca 內建「同一 task 連續三次 dispatch 失敗即熔斷」與第五節退件三次是兩套計數，分開記
 - `check --wait` 逾時或 `{count:0}` 視為檢查點，不得據此判定 worker 失敗或關掉 worker
-- 派工後 60 秒內讀 worker 終端驗證 prompt 已送出執行（agent CLI 開機中會把注入訊息卡在輸入框）；
-  卡住即補送 Enter；未驗證送出不得宣告已開工
+- dispatch wrapper 必須先以 `dispatch-show` 驗證派工存在，驗證失敗不得寫 pipeline.json
 - 票面不得要求實作 worker 等待、催討或安排審查；worker 交件即發 worker_done 收工，
   審查一律由協調者事後安排
 - Sol 內部審查與 Claude 獨立審查並行執行，兩邊發現合併為單輪退回；
   審查期間不得讓實作 worker 閒置輪詢
-- 簽收一律 `orca orchestration check --ack <delivery_id>`，`delivery_id` 取自該批 `check`
-  回傳的 `deliveryId`；不帶 ID 的 `--ack` 不簽收，同一批訊息會重播成假交件
-- 同一個 run 同時只准一個 `check --wait` 等待器；已有等待器時再開一個回 `waiter_exists`，
-  改讀既有等待器的輸出，不得改用輪詢
+- 簽收只准由 check wrapper 依 pipeline.json 的 pending_ack 執行；deliveryId 取自該批 wrapper
+  回傳的 deliveryId，缺 ID 不得簽收，否則同一批訊息會重播成假交件
+- 同一個 run 同時只准一個 check wrapper 等待器；已有等待器回 waiter_exists 時，必須讀既有
+  等待器的輸出，不得改用輪詢
 
 ## 三、模型分工
 
@@ -105,6 +101,7 @@ orca orchestration check --wait --types worker_done,escalation,question \
 ### 計數口徑
 
 只有「Codex 交件 → Claude 退回」算一次。Codex 內部 Sol 審查的來回不計數。
+同一票 Sol 審查以兩輪為限：首輪交件審與最終合併前終審；中間退件輪複驗由 Claude 側審查者單審。
 
 ### 分類（退件時必填，二選一）
 
@@ -112,6 +109,9 @@ orca orchestration check --wait --types worker_done,escalation,question \
 - `spec`：規格本身有洞、Codex 照做但方向錯 → **不計數**，中止本票、回第四節重凍規格、計數歸零
 
 第二次退件時 Claude 必須明確宣告本票卡點屬 `impl` 或 `spec`，不得拖到第三次。
+
+一般 `impl` 退件重派必須由 dispatch wrapper 先 release 舊 dispatch；每輪必須新建 task 與 worker，
+round 必須加 1；不得使用 `--retry-of`。
 
 ### 退件紀錄
 
@@ -229,8 +229,8 @@ Claude 凍結規格 → Codex Terra 實作（Sol 交件前審）→ Claude Sonne
 
 ## 九、派 agent 的安全規則
 
-派 agent 前一律完整讀取 `<plugin>/rules/code-rules.md`，並把該檔「六、Subagent 專用」與
-「三、禁止」兩節原文傳入 subagent 的 prompt；不得每次重寫、不得摘要。
+Codex worker 一律讀專案 AGENTS.md 的 `skeleton-slice:rules` 內嵌區塊；prompt 只傳票檔與報告路徑，
+不得夾帶 code-rules 原文。內建 subagent 仍傳「六、Subagent 專用」與「三、禁止」原文。
 
 ### worktree 基準（強制）
 
@@ -262,8 +262,18 @@ Claude 凍結規格 → Codex Terra 實作（Sol 交件前審）→ Claude Sonne
  "branch":"line-01","status":"pending","blocked_by":[],"shared_files":[],"migration":null}]}
 ```
 
-- status 取值：pending｜dispatched｜approved｜merging｜merged｜stopped
+- status 取值：pending｜dispatched｜approved｜merging｜merged｜stopped｜rejected
 - approved 由對話台在使用者點頭後改 true；false 時派工閘擋下全部派工
 - 檔名含 review 的審查票不入 pipeline.json、不受派工閘管
 - 派工指令的 spec 必須引用票檔路徑（`.scratch/<effort>/issues/*.md`），否則派工閘擋下
+
+## 十一、上下文預算
+
+- dual 模式的派工只准執行 `scripts/dispatch.mjs`；收訊只准執行 `scripts/check.mjs`。
+- 派工後的 prompt 送出驗證由 `scripts/dispatch.mjs` 承擔，人工補 Enter 條款廢止。
+- pipeline.json 必須落盤 run_id、pending_ack、dispatch_id、task_id、round、status；訊息全文必須落盤 reports/。
+- 票檔不得超過 150 行；超限票必須回 /to-tickets 重切。
+- worker_done 本文必須恰為兩行：結論一行與報告檔路徑一行。
+- 調度台 Read 只准 .scratch/**、BOARD.md、AGENTS.md、CLAUDE.md、pipeline.json、pipeline-inbox.json 與 plugin 目錄。
+- AGENTS.md 的 skeleton-slice 內嵌區塊必須等於 code-rules 第三節、第六節與 container-contract.md；漂移即不得交件。
 

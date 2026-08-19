@@ -38,7 +38,7 @@ description: 做下一片——初始化之後的一切開發入口：換真線�
 大路線交接動作（對話台做完就回到使用者身上，全程使用者零操作）：
 1. pipeline.json 寫齊每票的 branch／blocked_by／shared_files／migration 欄（機器閘門依據）。
 2. 經 Orca 開調度台：新 Claude 終端、啟動環境變數 `SKELETON_ROLE=dispatch`、
-   注入一句「讀 <effort 目錄>/pipeline.json 與 workflow.md 十，接手調度循環」。
+   注入一句「讀 <effort 目錄>/pipeline.json 與 workflow.md 十一，使用 scripts/dispatch.mjs、scripts/check.mjs 接手調度循環」。
 3. 交接完成即問使用者：「工人開工了，趁等待把下一塊〈名〉問清楚？」——不得讓使用者乾等。
 4. 每個 grill 段落結束時讀 `escalations.md`，有項目先帶使用者裁決再續問。
 
