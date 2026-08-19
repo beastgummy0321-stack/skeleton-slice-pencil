@@ -5,8 +5,8 @@
 
 ## 零、環境判定（可攜條款）
 
-開工前跑一次 `orca status --json`。Orca 與 Codex 齊備 → 全檔照辦。
-`orca` 指令查無、或本機無 Codex → 本檔所有 Orca／Codex 條款停用，改為：
+環境變數 `CODEX_EXEC_BIN` 有值，或 PATH 可解析到 `codex` 執行檔 → exec 條款全檔照辦。
+兩者皆無 → 本檔所有 exec 條款停用，改為：
 實作與探查派內建 subagent（Task／Agent 工具），審查由未參與實作的獨立 subagent 執行。
 其餘條款（規格凍結、退件制度、耦合紀律、DoR）照舊，一條不減。
 
@@ -24,38 +24,23 @@ Claude 不寫實作程式碼。Codex 不改規格。任一方要跨線，停下�
 **唯一豁免＝slice 路線 A／B 快改**（純樣式／文案，或不動 schema 與模組進入點的行為修改）：
 由對話 Claude 直接改，不開 run、不派工、不計退件；一旦動到 schema 或模組進入點，
 當場升級 C 路線，照本節分工。
-上下文一律以檔案傳遞（票＋驗收清單）；Orca 訊息只傳「去讀哪一個檔」，不得夾帶規格內容。
+上下文一律以檔案傳遞（票＋驗收清單）。
 
-## 二、交接一律走 Orca（強制）
+## 二、派工一律走 exec wrapper（強制）
 
-Claude 與 Codex 之間不得直接呼叫對方 CLI、不得自行開 PTY、不得用裸 git worktree。
-派工前先讀 `orca skills get orchestration`，指令與旗標不得憑記憶生成。標準路徑：
+唯一入口：
 
 ```bash
-orca orchestration run-create   --objective "<本輪目標>" --json
-node scripts/dispatch.mjs --ticket <票號> --cwd <projectRoot> --effort <effort>
-node scripts/check.mjs --cwd <projectRoot> --effort <effort> --timeout-ms 600000
+node scripts/dispatch.mjs --ticket <票號> --cwd <projectRoot> --role impl|review|scout
 ```
 
-- dual 模式下 `worker-start`、`dispatch --inject`、`orchestration check` 只准由兩支 wrapper 呼叫；裸指令一律不得執行
-- 實作派 `gpt-5.6-terra`、審查派 `gpt-5.6-sol`、探查派 `gpt-5.6-luna`
-- review／scout 派工一律走 `scripts/dispatch.mjs --role review|scout`（模型由 wrapper 決定：
-  review=gpt-5.6-sol、scout=gpt-5.6-luna）；裸 `worker-start` 照舊禁止
-- 宣告「已派工」前先驗：`orca orchestration dispatch-show --task <task_id> --json`
-- 沒有 task／dispatch 紀錄的工作，不得事後描述為已 orchestrated
-- Orca 內建「同一 task 連續三次 dispatch 失敗即熔斷」與第五節退件三次是兩套計數，分開記
-- `check --wait` 逾時或 `{count:0}` 視為檢查點，不得據此判定 worker 失敗或關掉 worker
-- 連續 3 次空檢查點（check.mjs 計數提示）→ 必須跑 `dispatch-show`＋`terminal read` 查活；
-  查得 worker 已死 → release 後以 `--redispatch` 重派、round 加 1、不計退件
-- dispatch wrapper 必須先以 `dispatch-show` 驗證派工存在，驗證失敗不得寫 pipeline.json
-- 票面不得要求實作 worker 等待、催討或安排審查；worker 交件即發 worker_done 收工，
-  審查一律由協調者事後安排
-- Sol 內部審查與 Claude 獨立審查並行執行，兩邊發現合併為單輪退回；
-  審查期間不得讓實作 worker 閒置輪詢
-- 簽收只准由 check wrapper 依 pipeline.json 的 pending_ack 執行；deliveryId 取自該批 wrapper
-  回傳的 deliveryId，缺 ID 不得簽收，否則同一批訊息會重播成假交件
-- 同一個 run 同時只准一個 check wrapper 等待器；已有等待器回 waiter_exists 時，必須讀既有
-  等待器的輸出，不得改用輪詢；等待器行程已不存在時，直接開新等待器接手，不得繼續等舊等待器
+裸 `codex exec` 與裸 orca orchestration 指令一律禁止（閘門攔截）。
+
+- worker＝子行程：完工＝退出碼＋last-message 檔；wrapper 由協調者以背景任務執行，
+  完工通知由 harness 送達，不設輪詢、不設等待器
+- 審查 role 一律唯讀沙箱：審查不得改碼，由機器強制
+- 上下文一律以檔案傳遞：spec 只傳票檔與報告路徑，不夾帶規格內容
+- 模型與檔位由 wrapper 固定（Terra／Sol＝high、Luna＝low），不得依賴 config.toml 全域值
 
 ## 三、模型分工
 
@@ -106,6 +91,7 @@ node scripts/check.mjs --cwd <projectRoot> --effort <effort> --timeout-ms 600000
 ### 計數口徑
 
 只有「Codex 交件 → Claude 退回」算一次。Codex 內部 Sol 審查的來回不計數。
+Sol 內部審查與 Claude 獨立審查並行執行時，兩邊發現合併為單輪退回。
 零退件票，Sol 只上場一次：首輪審即終審，合併前不得再排 Sol。
 有退件票的終審，Sol 只驗退件項回歸＋一項新破壞檢查，全套重跑禁止；中間退件輪複驗由 Claude 側審查者單審。
 
@@ -117,8 +103,8 @@ node scripts/check.mjs --cwd <projectRoot> --effort <effort> --timeout-ms 600000
 第二次退件時 Claude 必須明確宣告本票卡點屬 `impl` 或 `spec`，不得拖到第三次。
 同一票 spec 重凍以 2 次為限；第 3 次觸發即停票，交使用者裁決。
 
-一般 `impl` 退件重派必須由 dispatch wrapper 先 release 舊 dispatch；每輪必須新建 task 與 worker，
-round 必須加 1；不得使用 `--retry-of`。
+一般 `impl` 退件重派一律以 `node scripts/dispatch.mjs --ticket <票號> --cwd <root> --role impl --redispatch`
+執行；round 必須加 1；不得使用 `--retry-of`。
 
 ### 退件紀錄
 
@@ -193,9 +179,8 @@ Claude 凍結規格 → Codex Terra 實作（Sol 交件前審）→ Claude Sonne
   不得兩個實作工人共用同一工作區
 - 每批過獨立驗收後立即 commit；前批未 commit 前，下一批不得修改與前批重疊的檔案
 - 免 migration、不碰金流、純黏合的批次，做後端與換真線可合併一票交付；雙審查不得因此省略
-- heartbeat 訊息只簽收不回覆；等待迴圈以 worker_done、escalation、question 過濾，
-  不得因 heartbeat 中斷排程或讀取 worker 終端
-- 主幹紅燈或合併衝突 → 調度台開 hotfix 票（檔名含 hotfix），寫入 pipeline.json 佇列最前、
+- 完工通知到達即安排審查；worker 為子行程，交件即退出，無閒置 worker
+- 主幹紅燈或合併衝突 → 協調者開 hotfix 票（檔名含 hotfix），寫入 pipeline.json 佇列最前、
   blocked_by 空，經 wrapper 派工修復；hotfix 在飛期間其他線不得合併
 
 ### 多模組平行施工四護欄（強制）
@@ -247,25 +232,17 @@ Codex worker 一律讀專案 AGENTS.md 的 `skeleton-slice:rules` 內嵌區塊�
 - 開平行線 worktree 後第一個動作＝驗證基準 commit 是目標分支 HEAD（`git log -1`＋
   `git rev-list --count HEAD..<目標分支>` 必須為 0）；不是即先合流再開工，不得在過時基準上實作
 
-## 十、雙台分工（多線並行時強制）
+## 十、單台調度（多線並行時強制）
 
-多線並行啟用時（`.scratch/<effort>/pipeline.json` 存在且 `mode=dual`），主線工作分兩台。
-兩台皆由 agent 自行開設與維運；使用者只回答 grill 與點頭，不做任何操作。
+多線並行啟用時（`.scratch/<effort>/pipeline.json` 存在且 `mode="dual"`），對話台即協調者：
+grill、凍票、派工（背景任務）、收完工通知、安排審查、合併全在同一台執行；
+使用者只回答 grill 與點頭，不做任何操作。
 
-- **對話台**（使用者面前的 session）：只做 grill、/to-spec、/to-tickets、票單點頭、
-  退件仲裁、驗工單。派工、掛 worker 等待器、合併主幹一律禁止（閘門攔截）。
-  派工交接完成後立即引導使用者 grill 下一個功能區塊，不得讓使用者等待工程進度。
-- **調度台**（agent 經 Orca 另開的 Claude 終端，啟動時設環境變數 `SKELETON_ROLE=dispatch`）：
-  循環執行「等 worker_done → 安排審查 → 合併 → 更新 pipeline.json 與看板 → 派下一張前線票」。
-  修改規格票與規格檔一律禁止（閘門攔截）。
-- 兩台不互傳訊息；上下文以檔案交換：票檔、看板、pipeline.json、
-  escalation 檔（`.scratch/<effort>/escalations.md`）。
-- 需要使用者裁決的事（spec 洞、三次停止、花錢、需批准項）由調度台寫入 escalation 檔並停該票；
-  對話台每個回合開頭讀 escalation 檔，不限 grill 段落結束，有項目即帶使用者裁決。
-- 對話台新增票寫 `pipeline-inbox.json`；pipeline.json 狀態欄唯一寫手＝調度台（閘門攔截）。
-- 調度台上下文耗盡即自行收尾結束；新調度台讀 pipeline.json＋看板即可接手，不做對話交接。
+- 派工一律以背景任務執行 wrapper，送出後立即引導使用者 grill 下一個功能區塊，不得讓使用者乾等。
+- escalation 機制：worker 把需裁決事項寫入 `.scratch/<effort>/escalations.md` 並以非零退出碼收工；
+  協調者每個回合開頭讀 escalations.md，不限 grill 段落結束，有項目即先帶使用者裁決。
 
-### pipeline.json（機器閘門依據，/to-tickets 收尾時由對話台產出）
+### pipeline.json（機器閘門依據，/to-tickets 收尾時產出）
 
 ```json
 {"mode":"dual","approved":false,"tickets":[{"id":"01","file":"issues/01-x.md",
@@ -273,17 +250,15 @@ Codex worker 一律讀專案 AGENTS.md 的 `skeleton-slice:rules` 內嵌區塊�
 ```
 
 - status 取值：pending｜dispatched｜approved｜merging｜merged｜stopped｜rejected
-- approved 由對話台在使用者點頭後改 true；false 時派工閘擋下全部派工
+- approved 由使用者點頭後改 true；false 時派工閘擋下全部派工
 - 檔名含 review 的審查票不入 pipeline.json、不受派工閘管
 - 派工指令的 spec 必須引用票檔路徑（`.scratch/<effort>/issues/*.md`），否則派工閘擋下
 
 ## 十一、上下文預算
 
-- dual 模式的派工只准執行 `scripts/dispatch.mjs`；收訊只准執行 `scripts/check.mjs`。
-- 派工後的 prompt 送出驗證由 `scripts/dispatch.mjs` 承擔，人工補 Enter 條款廢止。
-- pipeline.json 必須落盤 run_id、pending_ack、dispatch_id、task_id、round、status；訊息全文必須落盤 reports/。
+- 派工只准執行 `node scripts/dispatch.mjs`。
+- pipeline.json 必須落盤 run_id、dispatch_id、task_id、round、status；訊息全文必須落盤 reports/。
 - 票檔不得超過 150 行；超限票必須回 /to-tickets 重切。
-- worker_done 本文必須恰為兩行：結論一行與報告檔路徑一行。
-- 調度台 Read 只准 .scratch/**、BOARD.md、AGENTS.md、CLAUDE.md、pipeline.json、pipeline-inbox.json 與 plugin 目錄。
+- last-message 本文必須恰為兩行：結論一行與報告檔路徑一行。
 - AGENTS.md 的 skeleton-slice 內嵌區塊必須等於 code-rules 第三節、第六節與 container-contract.md；漂移即不得交件。
 
