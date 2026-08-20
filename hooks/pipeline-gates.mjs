@@ -21,6 +21,8 @@ function mainRepoRoot(from) {
 }
 const cwd = mainRepoRoot(shellCwd);
 
+// 存在但讀不動／解析不了的 pipeline.json：不能當作沒有（那是 fail-open，閘門整份消失）。
+const brokenPipelines = [];
 function findPipelines() {
   const scratch = join(cwd, '.scratch');
   if (!existsSync(scratch)) return [];
@@ -29,17 +31,22 @@ function findPipelines() {
     const path = join(dir, 'pipeline.json');
     try {
       if (!statSync(dir).isDirectory() || !existsSync(path)) return [];
-      const data = JSON.parse(readFileSync(path, 'utf8'));
-      return data?.mode === 'dual' ? [{ path, data }] : [];
     } catch { return []; }
+    let data;
+    try { data = JSON.parse(readFileSync(path, 'utf8')); } catch { brokenPipelines.push(path); return []; }
+    return data?.mode === 'dual' ? [{ path, data }] : [];
   });
 }
 
 const pipelines = findPipelines();
-if (pipelines.length === 0) process.exit(0);
+if (pipelines.length === 0 && brokenPipelines.length === 0) process.exit(0);
 const ticketsOf = (pipeline) => Array.isArray(pipeline.data?.tickets) ? pipeline.data.tickets : [];
 
 if (tool !== 'Bash' && tool !== 'PowerShell') process.exit(0);
+// 擋在工具判斷之後：Read／Write／Edit 必須放行，否則沒人修得了壞檔，session 直接鎖死。
+if (brokenPipelines.length > 0) {
+  block(`pipeline.json 無法解析：${brokenPipelines.join('、')}\n閘門無法判讀狀態，Bash／PowerShell 一律擋下。先用 Read／Edit 修好該檔（需為合法 JSON）再繼續。`);
+}
 const command = String(payload?.tool_input?.command ?? '');
 const commandSegments = command.split(/&&|\|\||;|\||\r?\n/);
 const matchesSegment = (pattern) => commandSegments.some((segment) => pattern.test(segment));

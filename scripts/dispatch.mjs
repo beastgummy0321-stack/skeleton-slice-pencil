@@ -1,4 +1,4 @@
-import { mkdtempSync, mkdirSync, rmdirSync, writeFileSync, readFileSync, readdirSync, rmSync, existsSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, rmdirSync, writeFileSync, renameSync, readFileSync, readdirSync, rmSync, existsSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { spawn, spawnSync } from 'node:child_process';
@@ -20,6 +20,16 @@ const ROLE_CONFIG = {
   review: { model: 'gpt-5.6-sol', sandbox: 'workspace-write', effort: 'high' },
   scout: { model: 'gpt-5.6-luna', sandbox: 'workspace-write', effort: 'low' },
 };
+
+// 同一票 impl 退件累計 3 輪就停票（workflow.md 第五節，三次停止）——契約定案值，不做成可設定項。
+const MAX_IMPL_ROUNDS = 3;
+
+// 原子落盤：先寫同目錄暫存檔再 rename 覆蓋；同檔案系統的 rename 是原子操作，行程中斷不會留半檔。
+function savePipeline(pipelinePath, pipeline) {
+  const tmpPath = `${pipelinePath}.tmp`;
+  writeFileSync(tmpPath, `${JSON.stringify(pipeline, null, 2)}\n`);
+  renameSync(tmpPath, pipelinePath);
+}
 
 const COMMON_PREFIX = '本次為 exec 派工：禁跑 orca 指令；不得 git commit、git push；npm 用 npm.cmd。';
 
@@ -50,6 +60,9 @@ function checkGates({ pipeline, tickets, ticket, ticketPath, role, redispatch })
   try { if (lineCount(ticketPath) > 150) return '票太大，回 /to-tickets 重切'; } catch { return `派工閘：票檔不存在 ${ticket.file}`; }
 
   if (role === 'impl') {
+    if (ticket.status === 'rejected' && Number(ticket.round || 1) >= MAX_IMPL_ROUNDS) {
+      return `派工閘：票 ${ticket.id} 觸發三次停止——impl 退件已累計 ${MAX_IMPL_ROUNDS} 輪（workflow.md 第五節），停票交使用者裁決，不得再派工`;
+    }
     const accepted = ticket.status === 'pending' || (ticket.status === 'rejected' && redispatch);
     if (!accepted) return `派工閘：票 ${ticket.id} 狀態為 ${ticket.status}`;
     // v3 沒有 dispatch_id，改用 exit 落盤紀錄當「已派過工」的訊號：pending 卻已有 exit 代表狀態被手動撥回，不得重派。
@@ -183,7 +196,7 @@ export async function dispatch({ cwd, effort, ticketId, role = 'impl', redispatc
       if (role === 'impl') { ticket.status = 'dispatched'; ticket.round = round; }
       else if (role === 'review') { ticket.review_round = Number(ticket.review_round || 0) + 1; }
       else { ticket.scout_round = Number(ticket.scout_round || 0) + 1; }
-      writeFileSync(pipelinePath, `${JSON.stringify(pipeline, null, 2)}\n`);
+      savePipeline(pipelinePath, pipeline);
 
       const report = role === 'impl' ? reportPath : role === 'review' ? reviewsPath : prescanPath;
       return { args, round, report, lastMessagePath };
@@ -208,7 +221,7 @@ export async function dispatch({ cwd, effort, ticketId, role = 'impl', redispatc
         const entry = { role, round, code: runResult.code, timed_out: runResult.timedOut, duration_s: runResult.durationS, last_message: lastMessage };
         ticket.history = [...(ticket.history ?? []), entry];
         ticket.exit = entry;
-        writeFileSync(pipelinePath, `${JSON.stringify(pipeline, null, 2)}\n`);
+        savePipeline(pipelinePath, pipeline);
       }
     });
   } catch { /* best-effort */ }
@@ -474,6 +487,21 @@ async function runSelfTestBody(root) {
   if (withHistory.history.some((item) => typeof item.duration_s !== 'number')) throw new Error('history 每筆須留 duration_s');
   if (JSON.stringify(withHistory.exit) !== JSON.stringify(withHistory.history[3])) throw new Error('exit 須指向 history 最後一筆');
   if (withHistory.history.map((item) => `${item.role}${item.round}`).join(',') !== 'impl1,review1,impl2,review2') throw new Error('history 順序或輪次不正確');
+
+  // ---- P1-1：三次停止（workflow.md 第五節）——round=2 的退件票仍派得動，round≥3 拒派且不寫盤 ----
+  putTicket({ id: '05', file: 'issues/05.md', status: 'rejected', branch: 'feature-05', round: 2 });
+  const thirdRound = await dispatch({ cwd: root, effort: 'x', ticketId: '05', redispatch: true, spawnFn: okStub });
+  if (!thirdRound.ok || thirdRound.round !== 3) throw new Error('round=2 的退件票（第 3 輪）應仍派得動，三次停止不得差一');
+  // 原子寫：落盤後 pipeline.json 仍是完整合法 JSON，且暫存檔已被 rename 掉。
+  JSON.parse(readFileSync(pipelinePath, 'utf8'));
+  if (existsSync(`${pipelinePath}.tmp`)) throw new Error('原子寫：pipeline.json.tmp 殘留，rename 未覆蓋');
+
+  putTicket({ id: '05', file: 'issues/05.md', status: 'rejected', branch: 'feature-05', round: 3 });
+  const beforeStop = readFileSync(pipelinePath, 'utf8');
+  const stopped = await dispatch({ cwd: root, effort: 'x', ticketId: '05', redispatch: true, spawnFn: failingSpawn });
+  if (stopped.ok || stopped.code !== 2) throw new Error('三次停止未拒派');
+  if (!stopped.message.includes('三次停止')) throw new Error(`三次停止訊息未點明三次停止：${stopped.message}`);
+  if (readFileSync(pipelinePath, 'utf8') !== beforeStop) throw new Error('三次停止失敗案不應寫盤');
 }
 
 if (process.argv.includes('--self-test')) {

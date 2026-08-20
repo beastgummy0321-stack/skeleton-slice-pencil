@@ -45,5 +45,20 @@ try {
   writePipeline([], 'single');
   expect(run({ ...base, tool_input: { command: 'orca orchestration worker-start --task x' } }), 0, 'non-dual');
   expect(run({ ...base, tool_input: { command: 'codex exec --task x' } }), 0, 'non-dual codex exec');
+
+  // fail-closed：pipeline.json 存在但無效 JSON → 擋 Bash／PowerShell（連無害指令），但留 Read／Edit 自救路。
+  // 證紅方式：把 hook 的 brokenPipelines block 拿掉（回到 catch 吞掉），這四條由綠轉紅。
+  const badPath = join(root, '.scratch', 'x', 'pipeline.json');
+  writeFileSync(badPath, '{ "mode": "dual", tickets: [');
+  const bad = run({ ...base, tool_input: { command: 'npm test' } });
+  expect(bad, 2, 'broken pipeline.json blocks harmless Bash');
+  if (!bad.stderr.includes(badPath)) throw new Error(`broken pipeline.json: stderr 未指名壞檔路徑：${bad.stderr}`);
+  expect(run({ cwd: root, tool_name: 'PowerShell', tool_input: { command: 'npm test' } }), 2, 'broken pipeline.json blocks PowerShell');
+  expect(run({ cwd: root, tool_name: 'Read', tool_input: { file_path: badPath } }), 0, 'broken pipeline.json allows Read');
+  expect(run({ cwd: root, tool_name: 'Edit', tool_input: { file_path: badPath } }), 0, 'broken pipeline.json allows Edit');
+  // 沒在用（目錄在、pipeline.json 不在）維持放行。
+  rmSync(badPath);
+  expect(run({ ...base, tool_input: { command: 'npm test' } }), 0, 'missing pipeline.json stays open');
+
   process.stdout.write('gates self-test passed\n');
 } finally { rmSync(root, { recursive: true, force: true }); }

@@ -38,7 +38,7 @@ node scripts/dispatch.mjs --ticket <票號> --cwd <projectRoot> --role impl|revi
 
 - worker＝子行程：完工＝退出碼＋last-message 檔；wrapper 由協調者以背景任務執行，
   完工通知由 harness 送達，不設輪詢、不設等待器
-- 審查 role 一律唯讀沙箱：審查不得改碼，由機器強制
+- 審查 role 寫不進 worktree：review 的可寫根（-C）＝reviews 目錄、scout＝reports 目錄；審查不得改碼，由機器強制
 - 上下文一律以檔案傳遞：spec 只傳票檔與報告路徑，不夾帶規格內容
 - 模型與檔位由 wrapper 固定（Terra／Sol＝high、Luna＝low），不得依賴 config.toml 全域值
 
@@ -117,6 +117,7 @@ Sol 內部審查與 Claude 獨立審查並行執行時，兩邊發現合併為�
 
 同一票 `impl` 退件累計三次，停止本票、不得再派工，並在紀錄結尾補一段交給使用者：
 三次原因、Claude 判定依據、一句話結論（卡點是規格沒定死或實作沒做到）。
+本條由派工閘機器強制：票 status=rejected 且 round>=3 一律拒派，被擋的票停票交使用者裁決。
 
 ### 謊報即換人
 
@@ -257,7 +258,7 @@ grill、凍票、派工（背景任務）、收完工通知、安排審查、合
 ## 十一、上下文預算
 
 - 派工只准執行 `node scripts/dispatch.mjs`。
-- pipeline.json 必須落盤 run_id、dispatch_id、task_id、round、status；訊息全文必須落盤 reports/。
+- pipeline.json 必須落盤票的 status 與 round，收工必須落盤 exit 與 history（每筆含 role、round、code、timed_out、duration_s、last_message）；訊息全文必須落盤 reports/。
 - 票檔不得超過 150 行；超限票必須回 /to-tickets 重切。
 - last-message 本文必須恰為兩行：結論一行與報告檔路徑一行。
 - AGENTS.md 的 skeleton-slice 內嵌區塊必須等於 code-rules 第三節、第六節與 container-contract.md；漂移即不得交件。
