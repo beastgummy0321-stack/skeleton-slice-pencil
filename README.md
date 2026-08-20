@@ -44,7 +44,9 @@ claude plugin install skeleton-slice-pencil@skeleton-slice-pencil
 
 選配（有裝就用，沒裝跳過）：Orca＋Codex（workflow.md 的派工分工；查無時自動 fallback 內建 subagent）、
 [leonxlnx/taste-skill](https://github.com/leonxlnx/taste-skill)、[pbakaus/impeccable](https://github.com/pbakaus/impeccable)、
-[nextlevelbuilder/ui-ux-pro-max-skill](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill)：前端生成與打磨。
+[nextlevelbuilder/ui-ux-pro-max-skill](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill)：前端生成與打磨、
+[kevintsai1202/Humanizer-zh-TW](https://github.com/kevintsai1202/Humanizer-zh-TW)：繁中文案去 AI 味（非 plugin，手動裝到 `~/.claude/skills/`）。
+四者合稱 Frontend Pack，安裝與降級規則見 `/setup-workflow`。
 
 ## 已有全域規範的機器注意
 
@@ -78,7 +80,9 @@ claude plugin install skeleton-slice-pencil@skeleton-slice-pencil
 | `bin/pencil-preflight.ps1` | 開檔 preflight。離開碼 0 已就緒、2 需要人在 GUI 點一下 New File |
 | `bin/pen-verify.mjs` | 設計快照落盤閘。不綠不得宣告設計完成、不得開票 |
 
-`skills/skeleton/SKILL.md` 第 4 節加了一段「Pencil 路線（可選）」，其餘 skill 與 hook 與原版相同。
+`skills/skeleton/SKILL.md` 第 4 節加了「Pencil 路線（可選）」、原型天花板、原型模式三選一、文案分桶；
+`skills/slice/SKILL.md` 第 2 節分流表擴為「新畫面或新狀態」；`skills/setup-workflow/SKILL.md` 加 Frontend Pack；
+`rules/screen-contract.md` 第二節加風格錨與 tracer 例外。hook 與原版相同。
 
 ### 收編邊界（一句話版）
 

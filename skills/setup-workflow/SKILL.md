@@ -1,6 +1,6 @@
 ---
 name: setup-workflow
-description: 安裝本工作流的外部依賴 plugin（ponytail、i-have-adhd、mattpocock-skills）並檢查環境（node、Orca／Codex）。換新機器或給他人安裝本 plugin 後跑一次。觸發：setup-workflow、安裝工作流依賴、環境檢查。
+description: 安裝本工作流的外部依賴 plugin（ponytail、i-have-adhd、mattpocock-skills、前端四件組 Frontend Pack）並檢查環境（node、Orca／Codex）。換新機器或給他人安裝本 plugin 後跑一次。觸發：setup-workflow、安裝工作流依賴、環境檢查。
 disable-model-invocation: true
 ---
 
@@ -13,6 +13,8 @@ disable-model-invocation: true
 1. `node --version`——本 plugin 的 hooks 依賴 node；查無 → 規範注入與規範檔閘門失效，skill 本體仍可用
 2. `claude plugin list` 含 `ponytail`、`i-have-adhd`、`mattpocock-skills` 與否
 3. `orca status --json`——查無 orca 或無 Codex → 告知：workflow.md 第零節 fallback 生效，派工改用內建 subagent
+4. Frontend Pack（有前端才需要）：`claude plugin list` 含 `ui-ux-pro-max`、`taste-skill`、`impeccable` 與否；
+   `~/.claude/skills/humanizer-zh-tw/SKILL.md` 存在與否。查無 → /skeleton 第 4 節「缺件降級」條款生效
 
 ## 二、安裝（列清單，使用者點頭才執行；未點頭不得裝任何東西）
 
@@ -28,9 +30,31 @@ claude plugin install i-have-adhd@i-have-adhd
 claude plugin install mattpocock-skills@claude-plugins-official
 ```
 
+### Frontend Pack（純後端專案不裝）
+
+裝前先告知使用者：ui-ux-pro-max 帶 7 個 skill、taste-skill 帶 13 個，impeccable 另帶 23 個 `/impeccable` 指令。
+安裝後 skill 清單多 20 項，每 session 佔 description 列表。只做後端就不裝。
+
+```bash
+claude plugin marketplace add nextlevelbuilder/ui-ux-pro-max-skill
+claude plugin install ui-ux-pro-max@ui-ux-pro-max-skill
+
+claude plugin marketplace add leonxlnx/taste-skill
+claude plugin install taste-skill@taste-skill
+
+claude plugin marketplace add pbakaus/impeccable
+claude plugin install impeccable@impeccable
+```
+
+humanizer-zh-tw 不是 plugin（repo 根只有 SKILL.md），手動裝（單行，PowerShell 不吃反斜線續行）：
+
+```bash
+git clone --depth 1 https://github.com/kevintsai1202/Humanizer-zh-TW ~/.claude/skills/humanizer-zh-tw
+```
+
 ## 三、驗證（裝完必做）
 
-1. `claude plugin list` 逐項確認出現。
+1. `claude plugin list` 逐項確認出現。裝了 Frontend Pack 的機器另確認 `~/.claude/skills/humanizer-zh-tw/SKILL.md` 存在（它不是 plugin，不會出現在 plugin list）。
 2. 提醒使用者重開 session 讓 hooks 生效。
 3. 重開後開場廣播出現「skeleton-slice 全域規範」字樣＝注入成功；沒出現 → 查 node 是否在 PATH。
 
