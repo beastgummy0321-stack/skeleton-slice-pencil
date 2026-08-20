@@ -1,4 +1,8 @@
-# skeleton-slice
+# skeleton-slice-pencil
+
+**這是 skeleton-slice 的 Pencil 版**（v3.2.0，分支自原版 v3.1.0 / c51e38d）。
+原版的規範一條沒改、一條沒少，另外加上 pen.dev（Pencil）設計檔的接線邊界與腳本。
+與原版可並存，擇一啟用。不用 Pencil 的專案裝原版就好，本版對你沒有好處。
 
 可攜的 Claude Code 開發工作流 plugin。一次安裝，整套帶走：
 
@@ -15,7 +19,7 @@
 
 ```bash
 claude plugin marketplace add beastgummy0321-stack/skeleton-slice
-claude plugin install skeleton-slice@skeleton-slice
+claude plugin install skeleton-slice-pencil@skeleton-slice-pencil
 ```
 
 裝完重開 session，跑 `/setup-workflow` 裝外部依賴（會先列清單問你）。
@@ -62,3 +66,38 @@ claude plugin install skeleton-slice@skeleton-slice
         → ③換真線（前端零 diff＋拔根測試）
   收工：看板刪行、git 當檔案館、過程檔即刪
 ```
+
+
+---
+
+## Pencil 版多了什麼
+
+| 檔案 | 用途 |
+|---|---|
+| `rules/pencil-bridge.md` | 接線規範。由 `/skeleton` 第 4 節在走 Pencil 路線時載入原文；沒用 Pencil 就不載，不佔 context |
+| `bin/pencil-preflight.ps1` | 開檔 preflight。離開碼 0 已就緒、2 需要人在 GUI 點一下 New File |
+| `bin/pen-verify.mjs` | 設計快照落盤閘。不綠不得宣告設計完成、不得開票 |
+
+`skills/skeleton/SKILL.md` 第 4 節加了一段「Pencil 路線（可選）」，其餘 skill 與 hook 與原版相同。
+
+### 收編邊界（一句話版）
+
+Pencil 只當設計檔的讀寫介面，**不是第三個寫程式的人**。
+`.pen` → React component 一律開票派 Codex，過 verify 閘。細節看 `rules/pencil-bridge.md`。
+
+### 實測基準（Pencil 1.2.0 / Windows 11 / 2026-08-20，兩輪丟棄專案試跑）
+
+已證實可行：
+- Pencil 官方 shadcn/ui library 帶進 90+ component 與 28 個**與 shadcn 同名**的 CSS 變數
+- `execute` 一次建完三個畫面（116 節點）不出錯；設計品質可用
+- 設計快照可 dump 成純 JSON 進 repo（17.6KB／116 節點），可 diff、可當票的附件
+
+已證實不可行，不要重踩：
+- MCP 開不了檔也建不了檔；**唯一可靠的建檔方式是在 GUI 點 New File**
+- 命令列帶路徑開檔會開出「不含檔案內容且不 render」的文件
+- `Ctrl+S` 不寫檔；曾觀察到自動落盤但機制不明、無法重現
+- `TakeScreenshot` 與 `Export png` 回傳空白；目視驗證要走 `Export html-tailwind` → dev server → 瀏覽器截圖
+- `Export html-tailwind` 掛 Tailwind v3 CDN、`var(--)` 出現 0 次、硬編 hex；只能當參考稿
+- library 匯入沒有 MCP API，只能在 GUI 點
+
+兩輪試跑的完整紀錄與冷眼審查在實驗 repo（`pen-lab-app`／`pen-lab-app-2` 的 `RUN-LOG.md`），未隨 plugin 發佈。

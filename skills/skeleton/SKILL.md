@@ -64,6 +64,9 @@ stack：Next.js+TS+Tailwind+shadcn/ui+tRPC+zod+Drizzle+SQLite 起步（後換 Po
 
 1. 風格錨：功能地圖第一個畫面生 3 版靜態（ui-ux-pro-max 出方向 → design-taste-frontend 生成）
    → 瀏覽器 preview 挑 1 版＝全站 design token 定案。此頁兼 tracer：畫面→tRPC→DB 一張表打通。
+   **Pencil 路線（可選）**：改用 pen.dev 畫風格錨與各畫面。走此路線前必須先讀本 plugin
+   `rules/pencil-bridge.md` 原文（不摘要），並跑 `bin/pencil-preflight.ps1`。
+   該檔第四節的 dump 與 `bin/pen-verify.mjs` 不綠，不得宣告設計完成、不得開票。
 2. 畫面契約：每畫面產 `src/schemas/<畫面名>.ts`（zod schema＋action 簽名；註解＝資料哪裡來）。
    外部平台欄位用 /research 查官方文件填入＋註出處；查無 → 記 UNKNOWN，禁自創。
 3. 平行生成：每畫面一個 subagent；派工 prompt 附風格錨 token＋共用 mocks 入口

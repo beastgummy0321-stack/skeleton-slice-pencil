@@ -1,6 +1,8 @@
 {
-  "name": "skeleton-slice",
-  "version": "3.1.0",
-  "description": "可攜開發工作流：/skeleton 初始化（訪談樹＋全站可點原型）、/slice 換真線與日常開發、集裝箱憲章（模組邊界＋好找優先）、多 Agent／Codex 分工、reuse-first、code-rules 全套規範隨 plugin 注入。",
-  "author": { "name": "beastgummy0321-stack" }
+  "name": "skeleton-slice-pencil",
+  "version": "3.2.0",
+  "description": "可攜開發工作流（Pencil 版）：/skeleton 初始化、/slice 換真線、集裝箱憲章、多 Agent／Codex 分工、reuse-first、code-rules；另含 pen.dev（Pencil）設計檔接線規範與 preflight／落盤驗證腳本。",
+  "author": {
+    "name": "beastgummy0321-stack"
+  }
 }

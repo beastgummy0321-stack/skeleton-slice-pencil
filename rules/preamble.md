@@ -3,6 +3,7 @@
 以下四份為本工作流的強制規範，全文注入如後：workflow.md（多 Agent／Codex 分工）、
 reuse-first.md（不重複造輪）、code-rules.md（Code 階段硬規定）。
 container-contract.md 與 screen-contract.md 由 /skeleton、/slice、/container-contract 於用到時載入原文。
+pencil-bridge.md（pen.dev 設計檔接線）由 /skeleton 第 4 節於用到 Pencil 時載入原文；沒用 Pencil 就不載。
 
 ## 驗證紀律（強制）
 

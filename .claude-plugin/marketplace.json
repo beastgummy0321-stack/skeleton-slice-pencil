@@ -1,11 +1,13 @@
 {
-  "name": "skeleton-slice",
-  "owner": { "name": "beastgummy0321-stack" },
+  "name": "skeleton-slice-pencil",
+  "owner": {
+    "name": "beastgummy0321-stack"
+  },
   "plugins": [
     {
-      "name": "skeleton-slice",
+      "name": "skeleton-slice-pencil",
       "source": "./",
-      "description": "可攜開發工作流：/skeleton 初始化（訪談樹＋全站可點原型）、/slice 換真線與日常開發、集裝箱憲章、多 Agent 分工規範注入。"
+      "description": "skeleton-slice 的 Pencil 版：原工作流全套規範，外加 pen.dev 設計檔的接線邊界、preflight 與落盤驗證。與原版 skeleton-slice 可並存，擇一啟用。"
     }
   ]
 }
