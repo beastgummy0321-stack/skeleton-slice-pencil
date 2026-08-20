@@ -1,13 +1,25 @@
 // PreToolUse hook：dual 模式擋裸派工指令（含裸 codex exec），並保留合併閘。角色類閘門已隨雙台分工廢止刪除。
 import { readFileSync, existsSync, readdirSync, statSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, resolve, dirname } from 'node:path';
+import { spawnSync } from 'node:child_process';
 
 let payload;
 try { payload = JSON.parse(readFileSync(0, 'utf8')); } catch { process.exit(0); }
 
 const tool = payload?.tool_name ?? '';
-const cwd = payload?.cwd || process.cwd();
+const shellCwd = payload?.cwd || process.cwd();
 const block = (message) => { process.stderr.write(message); process.exit(2); };
+
+// pipeline.json 一律從主 repo 根解析：worktree 內帶的是凍票當時提交的舊副本，
+// 用 shell cwd 解析會讀到過期狀態（實測誤擋已 approved 的票）。
+// git 的 common-dir 在 worktree 內指向主 repo 的 .git，其上層即主 repo 根。
+function mainRepoRoot(from) {
+  const result = spawnSync('git', ['rev-parse', '--path-format=absolute', '--git-common-dir'], { cwd: from, encoding: 'utf8' });
+  if (result.status !== 0) return from;
+  const commonDir = (result.stdout || '').trim();
+  return commonDir ? dirname(resolve(from, commonDir)) : from;
+}
+const cwd = mainRepoRoot(shellCwd);
 
 function findPipelines() {
   const scratch = join(cwd, '.scratch');
@@ -39,9 +51,14 @@ if (usesBareCodexExec || usesDispatchCommand || usesCheckCommand) {
   block('派工一律經 scripts/dispatch.mjs');
 }
 
-if (/\bgit\s+merge\b/.test(command)) {
-  if (/--abort|--continue|--quit/.test(command)) process.exit(0);
-  const stripped = command.replace(/(["'])(?:(?!\1)[\s\S])*\1/g, ' ');
+// 合併閘只看真正會執行的部分：heredoc 內文與引號內文一律剔除，
+// 否則寫一份提到合併指令的文件就會被當成真的要合併而擋下。
+const withoutHeredocs = command.replace(/<<-?\s*(['"]?)([A-Za-z_][\w-]*)\1[\s\S]*?^[ \t]*\2[ \t]*$/gm, ' ');
+const executable = withoutHeredocs.replace(/(["'])(?:(?!\1)[\s\S])*\1/g, ' ');
+
+if (/\bgit\s+merge\b/.test(executable)) {
+  if (/--abort|--continue|--quit/.test(executable)) process.exit(0);
+  const stripped = executable;
   const match = stripped.match(/\bgit\s+merge\s+([\s\S]*)/);
   const branch = ((match?.[1] ?? '').split(/[\s;|&]+/).filter((part) => part && !part.startsWith('-')))[0] ?? '';
   if (branch.startsWith('origin/') || branch === 'FETCH_HEAD') process.exit(0);

@@ -97,13 +97,13 @@ function setupWorktree({ projectRoot, branch, base, role }) {
   return worktreePath;
 }
 
-function buildSpec({ role, round, ticketPath, reportPath, reviewsPath, prescanPath, worktreePath }) {
+function buildSpec({ role, round, ticketPath, reportPath, reviewsPath, prevReviewsPath, prescanPath, worktreePath }) {
   if (role === 'impl') {
-    const reviewPrefix = round >= 2 ? `先讀 ${reviewsPath}；` : '';
+    const reviewPrefix = round >= 2 ? `先讀 ${prevReviewsPath}；` : '';
     return `${COMMON_PREFIX}讀 ${ticketPath} 後開工；${reviewPrefix}完整報告寫入 ${reportPath}；交件前逐條自核票面驗收清單，報告附對照表；最後回覆只准兩行：結論一行＋報告檔路徑一行。`;
   }
   if (role === 'review') {
-    const reviewPrefix = round >= 2 ? `只驗 ${reviewsPath} 已列退件項＋一項本輪新破壞檢查；` : '';
+    const reviewPrefix = round >= 2 ? `只驗 ${prevReviewsPath} 已列退件項＋一項本輪新破壞檢查；` : '';
     return `${COMMON_PREFIX}你不得改碼（機器強制：${worktreePath} 不可寫）；受審程式碼在 ${worktreePath}；讀 ${ticketPath} 與 ${reportPath}；${reviewPrefix}不重跑完整套件，測試結果引用交件方報告並註明是引用；審查報告寫入 ${reviewsPath}；最後回覆只准兩行：通過或退件一行＋報告檔路徑一行。`;
   }
   return `${COMMON_PREFIX}讀 ${ticketPath}；唯讀預掃 ${worktreePath} 的受影響檔，摘要一頁寫入 ${prescanPath}；最後回覆只准兩行。`;
@@ -167,10 +167,12 @@ export async function dispatch({ cwd, effort, ticketId, role = 'impl', redispatc
       mkdirSync(join(scratch, 'reviews'), { recursive: true });
 
       const reportPath = join(scratch, 'reports', `${ticket.id}-r${round}.md`);
-      const reviewsPath = join(scratch, 'reviews', `${ticket.id}.md`);
+      // 每輪一份：協調者的退件單寫在第 N 輪的檔裡，第 N+1 輪的終審寫新檔，不覆蓋。
+      const reviewsPath = join(scratch, 'reviews', `${ticket.id}-r${round}.md`);
+      const prevReviewsPath = join(scratch, 'reviews', `${ticket.id}-r${round - 1}.md`);
       const prescanPath = join(scratch, 'reports', `${ticket.id}-prescan.md`);
       const lastMessagePath = join(scratch, 'reports', `${ticket.id}-r${round}-${role}-last.txt`);
-      const spec = buildSpec({ role, round, ticketPath, reportPath, reviewsPath, prescanPath, worktreePath });
+      const spec = buildSpec({ role, round, ticketPath, reportPath, reviewsPath, prevReviewsPath, prescanPath, worktreePath });
       const cfg = ROLE_CONFIG[role];
       const reportsDir = join(scratch, 'reports');
       const reviewsDir = join(scratch, 'reviews');
@@ -203,7 +205,9 @@ export async function dispatch({ cwd, effort, ticketId, role = 'impl', redispatc
       const pipeline = JSON.parse(readFileSync(pipelinePath, 'utf8'));
       const ticket = (pipeline.tickets ?? []).find((item) => String(item.id) === String(ticketId));
       if (ticket) {
-        ticket.exit = { role, round, code: runResult.code, timed_out: runResult.timedOut, duration_s: runResult.durationS, last_message: lastMessage };
+        const entry = { role, round, code: runResult.code, timed_out: runResult.timedOut, duration_s: runResult.durationS, last_message: lastMessage };
+        ticket.history = [...(ticket.history ?? []), entry];
+        ticket.exit = entry;
         writeFileSync(pipelinePath, `${JSON.stringify(pipeline, null, 2)}\n`);
       }
     });
@@ -372,8 +376,9 @@ async function runSelfTestBody(root) {
   const redispatchResult = await dispatch({ cwd: root, effort: 'x', ticketId: '01', redispatch: true, spawnFn: (args) => { redispatchCalls.push(args); const child = new EventEmitter(); child.kill = () => child.emit('exit', null, 'SIGKILL'); setTimeout(() => child.emit('exit', 0), 0); return child; } });
   if (!redispatchResult.ok || redispatchResult.round !== 2) throw new Error('redispatch round 未加一');
   const spec2 = redispatchCalls[0][redispatchCalls[0].length - 1];
-  const expectedReviewRef = `先讀 ${join(scratch, 'reviews', '01.md')}；`;
-  if (!spec2.includes(expectedReviewRef)) throw new Error('impl round≥2 前綴不符合契約');
+  const expectedReviewRef = `先讀 ${join(scratch, 'reviews', '01-r1.md')}；`;
+  if (!spec2.includes(expectedReviewRef)) throw new Error('impl round≥2 前綴須指向上一輪審查檔');
+  if (spec2.includes(join(scratch, 'reviews', '01-r2.md'))) throw new Error('impl round≥2 不得指向本輪審查檔');
 
   // ---- 驗收 2：review／scout 旗標序、模型；round≥2 前綴 ----
   writePipeline({ ticket: { status: 'dispatched', round: 2 } });
@@ -382,8 +387,9 @@ async function runSelfTestBody(root) {
   if (!reviewResult.ok) throw new Error('review 派工失敗');
   const reviewSpec = reviewCalls[0][reviewCalls[0].length - 1];
   const reportPath2 = join(scratch, 'reports', '01-r2.md');
-  const reviewsPath = join(scratch, 'reviews', '01.md');
-  const expectedReviewSpec = `${COMMON_PREFIX}你不得改碼（機器強制：${worktreePath1} 不可寫）；受審程式碼在 ${worktreePath1}；讀 ${resolve(scratch, 'issues/01.md')} 與 ${reportPath2}；只驗 ${reviewsPath} 已列退件項＋一項本輪新破壞檢查；不重跑完整套件，測試結果引用交件方報告並註明是引用；審查報告寫入 ${reviewsPath}；最後回覆只准兩行：通過或退件一行＋報告檔路徑一行。`;
+  const reviewsPath = join(scratch, 'reviews', '01-r2.md');
+  const prevReviewsPath = join(scratch, 'reviews', '01-r1.md');
+  const expectedReviewSpec = `${COMMON_PREFIX}你不得改碼（機器強制：${worktreePath1} 不可寫）；受審程式碼在 ${worktreePath1}；讀 ${resolve(scratch, 'issues/01.md')} 與 ${reportPath2}；只驗 ${prevReviewsPath} 已列退件項＋一項本輪新破壞檢查；不重跑完整套件，測試結果引用交件方報告並註明是引用；審查報告寫入 ${reviewsPath}；最後回覆只准兩行：通過或退件一行＋報告檔路徑一行。`;
   if (reviewSpec !== expectedReviewSpec) throw new Error('review spec 不逐字相等（round≥2 前綴）');
   const expectedReviewArgs = ['exec', '-m', 'gpt-5.6-sol', '-s', 'workspace-write', '-C', join(scratch, 'reviews'), '--skip-git-repo-check', '-c', 'model_reasoning_effort="high"', '-o', join(scratch, 'reports', '01-r2-review-last.txt'), reviewSpec];
   if (JSON.stringify(reviewCalls[0]) !== JSON.stringify(expectedReviewArgs)) throw new Error('review 旗標序不逐字相符（可寫根須為 reviews 目錄，且不應有 --add-dir）');
@@ -433,6 +439,41 @@ async function runSelfTestBody(root) {
   if (lockResult.ok) throw new Error('鎖目錄長期存在應 fail');
   if (readFileSync(pipelinePath, 'utf8') !== beforeLockContent) throw new Error('鎖競爭失敗案不應寫盤');
   rmdirSync(join(scratch, 'pipeline.lock'));
+
+  // ---- 驗收 9：審查報告輪次區隔（退件單不被下一輪終審覆寫）＋ history[] 逐輪累積 ----
+  writeFileSync(join(scratch, 'issues', '05.md'), '# history');
+  const okStub = (args) => {
+    writeFileSync(args[args.indexOf('-o') + 1], 'ok');
+    const child = new EventEmitter();
+    child.kill = () => child.emit('exit', null, 'SIGKILL');
+    setTimeout(() => child.emit('exit', 0), 0);
+    return child;
+  };
+  const putTicket = (ticket) => writeFileSync(pipelinePath, JSON.stringify({ mode: 'dual', approved: true, tickets: [ticket] }));
+  const readTicket = () => JSON.parse(readFileSync(pipelinePath, 'utf8')).tickets[0];
+  putTicket({ id: '05', file: 'issues/05.md', status: 'pending', branch: 'feature-05', round: 1 });
+
+  await dispatch({ cwd: root, effort: 'x', ticketId: '05', spawnFn: okStub });
+  await dispatch({ cwd: root, effort: 'x', ticketId: '05', role: 'review', spawnFn: okStub });
+  // 協調者把退件單寫進第 1 輪的審查檔，之後任何一輪都不得動它。
+  const reviewR1 = join(scratch, 'reviews', '05-r1.md');
+  writeFileSync(reviewR1, '退件單 #1');
+  putTicket({ ...readTicket(), status: 'rejected' });
+
+  await dispatch({ cwd: root, effort: 'x', ticketId: '05', redispatch: true, spawnFn: okStub });
+  const reviewCallsRound2 = [];
+  await dispatch({ cwd: root, effort: 'x', ticketId: '05', role: 'review', spawnFn: (args) => { reviewCallsRound2.push(args); return okStub(args); } });
+
+  if (readFileSync(reviewR1, 'utf8') !== '退件單 #1') throw new Error('第 1 輪審查檔（含退件單）被後續輪次覆寫');
+  const specRound2 = reviewCallsRound2[0][reviewCallsRound2[0].length - 1];
+  if (!specRound2.includes(`審查報告寫入 ${join(scratch, 'reviews', '05-r2.md')}`)) throw new Error('第 2 輪審查報告未寫入 -r2 檔');
+  if (!specRound2.includes(`只驗 ${reviewR1} 已列退件項`)) throw new Error('第 2 輪複驗來源須為第 1 輪審查檔');
+
+  const withHistory = readTicket();
+  if (withHistory.history?.length !== 4) throw new Error(`history 未逐輪累積：期望 4 筆，實得 ${withHistory.history?.length}`);
+  if (withHistory.history.some((item) => typeof item.duration_s !== 'number')) throw new Error('history 每筆須留 duration_s');
+  if (JSON.stringify(withHistory.exit) !== JSON.stringify(withHistory.history[3])) throw new Error('exit 須指向 history 最後一筆');
+  if (withHistory.history.map((item) => `${item.role}${item.round}`).join(',') !== 'impl1,review1,impl2,review2') throw new Error('history 順序或輪次不正確');
 }
 
 if (process.argv.includes('--self-test')) {
