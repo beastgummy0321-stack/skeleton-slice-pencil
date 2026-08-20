@@ -133,6 +133,14 @@ function defaultSpawn(args) {
   return spawn(process.env.CODEX_EXEC_BIN || 'codex', args, { stdio: 'ignore' });
 }
 
+// 機器組（workflow.md 五）＝交件閘：impl worker 退出後在該票 worktree 跑 pipeline.verify。
+// 取代 Sol 逐票內部審查——型別檢查／邊界／受影響測試／build 全是指令，不需 frontier 模型代跑。
+// shell:true：verify 是專案自訂的整條指令列（含 && 串接），不是單一執行檔。
+function defaultVerify(command, cwdPath) {
+  const result = spawnSync(command, { cwd: cwdPath, shell: true, encoding: 'utf8' });
+  return { code: result.status ?? 1, output: `${result.stdout || ''}${result.stderr || ''}` };
+}
+
 // 逾時 kill 子行程；成功／失敗／逾時三路徑都收斂到同一個 {code, timedOut, durationS}。
 function runChild(spawnFn, args, timeoutMs) {
   return new Promise((resolvePromise) => {
@@ -150,7 +158,7 @@ function runChild(spawnFn, args, timeoutMs) {
   });
 }
 
-export async function dispatch({ cwd, effort, ticketId, role = 'impl', redispatch = false, timeoutMs = 3600000, spawnFn = defaultSpawn }) {
+export async function dispatch({ cwd, effort, ticketId, role = 'impl', redispatch = false, timeoutMs = 3600000, spawnFn = defaultSpawn, verifyFn = defaultVerify }) {
   if (!['impl', 'review', 'scout'].includes(role)) return fail('--role 必須是 impl｜review｜scout');
   let scratch;
   try { scratch = effortPath(cwd, effort); } catch (error) { return fail(error.message); }
@@ -199,17 +207,27 @@ export async function dispatch({ cwd, effort, ticketId, role = 'impl', redispatc
       savePipeline(pipelinePath, pipeline);
 
       const report = role === 'impl' ? reportPath : role === 'review' ? reviewsPath : prescanPath;
-      return { args, round, report, lastMessagePath };
+      const verifyPath = join(scratch, 'reports', `${ticket.id}-r${round}-verify.txt`);
+      return { args, round, report, lastMessagePath, worktreePath, verifyPath, verifyCommand: pipeline.verify || null };
     });
   } catch (error) {
     if (error instanceof GateError) return fail(error.message, 2);
     return fail(error.message, 1);
   }
 
-  const { args, round, report, lastMessagePath } = started;
+  const { args, round, report, lastMessagePath, worktreePath, verifyPath, verifyCommand } = started;
   const runResult = await runChild(spawnFn, args, timeoutMs);
   let lastMessage = '';
   try { lastMessage = readFileSync(lastMessagePath, 'utf8').trim(); } catch { /* codex 未寫出 last-message 檔 */ }
+
+  // verify_ok：true＝機器組全綠，可進審查；false＝未交件，退回 worker；null＝pipeline 沒設 verify＝未驗。
+  // 只對 impl 跑：review／scout 不改碼，沒有東西可驗。
+  let verifyOk = null;
+  if (role === 'impl' && verifyCommand) {
+    const verdict = verifyFn(verifyCommand, worktreePath);
+    verifyOk = verdict.code === 0;
+    try { writeFileSync(verifyPath, `$ ${verifyCommand}\nexit=${verdict.code}\n\n${verdict.output}`); } catch { /* best-effort */ }
+  }
 
   // end 落盤：獨立取鎖，不把長跑子行程夾在鎖內。
   // ponytail: 落盤失敗只吞掉、不覆蓋子行程已跑完的結果——重試/告警留待需要時再加。
@@ -218,7 +236,7 @@ export async function dispatch({ cwd, effort, ticketId, role = 'impl', redispatc
       const pipeline = JSON.parse(readFileSync(pipelinePath, 'utf8'));
       const ticket = (pipeline.tickets ?? []).find((item) => String(item.id) === String(ticketId));
       if (ticket) {
-        const entry = { role, round, code: runResult.code, timed_out: runResult.timedOut, duration_s: runResult.durationS, last_message: lastMessage };
+        const entry = { role, round, code: runResult.code, timed_out: runResult.timedOut, duration_s: runResult.durationS, last_message: lastMessage, verify_ok: verifyOk };
         ticket.history = [...(ticket.history ?? []), entry];
         ticket.exit = entry;
         savePipeline(pipelinePath, pipeline);
@@ -226,7 +244,7 @@ export async function dispatch({ cwd, effort, ticketId, role = 'impl', redispatc
     });
   } catch { /* best-effort */ }
 
-  return { ok: true, ticket: String(ticketId), role, round, code: runResult.code, timed_out: runResult.timedOut, report, last_message: lastMessage };
+  return { ok: true, ticket: String(ticketId), role, round, code: runResult.code, timed_out: runResult.timedOut, report, last_message: lastMessage, verify_ok: verifyOk, verify_report: verifyOk === null ? null : verifyPath };
 }
 
 function parseArgs(args) {
@@ -502,6 +520,57 @@ async function runSelfTestBody(root) {
   if (stopped.ok || stopped.code !== 2) throw new Error('三次停止未拒派');
   if (!stopped.message.includes('三次停止')) throw new Error(`三次停止訊息未點明三次停止：${stopped.message}`);
   if (readFileSync(pipelinePath, 'utf8') !== beforeStop) throw new Error('三次停止失敗案不應寫盤');
+
+  // ---- defaultVerify 本體：唯一不被注入替換的生產路徑，實跑一次 shell ----
+  const vOk = defaultVerify('exit 0', root);
+  if (vOk.code !== 0) throw new Error(`defaultVerify 綠燈應為 0，實得 ${vOk.code}`);
+  const vRed = defaultVerify('echo boom && exit 3', root);
+  if (vRed.code !== 3) throw new Error(`defaultVerify 應透傳退出碼 3，實得 ${vRed.code}`);
+  if (!vRed.output.includes('boom')) throw new Error('defaultVerify 未收集輸出');
+
+  // ---- 機器組交件閘（workflow.md 五）：全綠／紅燈／未設 verify 三案 ----
+  writeFileSync(join(scratch, 'issues', '06.md'), 'verify ticket\n');
+  const putVerifyTicket = (pipelineExtra = {}) => writeFileSync(pipelinePath, JSON.stringify({
+    mode: 'dual', approved: true, ...pipelineExtra,
+    tickets: [{ id: '06', file: 'issues/06.md', status: 'pending', branch: 'feature-06', round: 1 }],
+  }));
+  const verifyReport = join(scratch, 'reports', '06-r1-verify.txt');
+  const verifyCalls = [];
+  const makeVerify = (code) => (command, cwdPath) => {
+    verifyCalls.push({ command, cwdPath });
+    return { code, output: code === 0 ? 'all green\n' : 'TS2345: 型別不符\n' };
+  };
+
+  // 全綠：verify_ok=true，報告落盤，exit 紀錄帶 verify_ok。
+  putVerifyTicket({ verify: 'npm run verify' });
+  const green = await dispatch({ cwd: root, effort: 'x', ticketId: '06', spawnFn: okStub, verifyFn: makeVerify(0) });
+  if (green.verify_ok !== true) throw new Error(`機器組全綠應回 verify_ok=true，實得 ${green.verify_ok}`);
+  if (verifyCalls.length !== 1) throw new Error('機器組未被呼叫恰一次');
+  if (verifyCalls[0].command !== 'npm run verify') throw new Error('機器組未收到 pipeline.verify 指令');
+  if (verifyCalls[0].cwdPath !== join(root, '.worktrees', 'feature-06')) throw new Error('機器組未在該票 worktree 執行');
+  if (!readFileSync(verifyReport, 'utf8').includes('all green')) throw new Error('機器組輸出未落盤');
+  if (JSON.parse(readFileSync(pipelinePath, 'utf8')).tickets[0].exit.verify_ok !== true) throw new Error('exit 紀錄未帶 verify_ok');
+
+  // 證紅：同一條路徑，verify 回非零就必須翻成 verify_ok=false，且輸出留在報告裡。
+  putVerifyTicket({ verify: 'npm run verify' });
+  const red = await dispatch({ cwd: root, effort: 'x', ticketId: '06', spawnFn: okStub, verifyFn: makeVerify(1) });
+  if (red.verify_ok !== false) throw new Error(`機器組紅燈應回 verify_ok=false，實得 ${red.verify_ok}`);
+  if (!readFileSync(verifyReport, 'utf8').includes('TS2345')) throw new Error('機器組紅燈輸出未落盤');
+
+  // 未設 verify：不呼叫機器組，verify_ok=null（＝未驗，審查者不得引用為通過）。
+  putVerifyTicket();
+  const before = verifyCalls.length;
+  const unset = await dispatch({ cwd: root, effort: 'x', ticketId: '06', spawnFn: okStub, verifyFn: makeVerify(0) });
+  if (unset.verify_ok !== null) throw new Error(`未設 verify 應回 null，實得 ${unset.verify_ok}`);
+  if (verifyCalls.length !== before) throw new Error('未設 verify 仍呼叫了機器組');
+
+  // review 不改碼，不跑機器組。
+  putVerifyTicket({ verify: 'npm run verify' });
+  await dispatch({ cwd: root, effort: 'x', ticketId: '06', spawnFn: okStub, verifyFn: makeVerify(0) });
+  const beforeReview = verifyCalls.length;
+  const reviewRun = await dispatch({ cwd: root, effort: 'x', ticketId: '06', role: 'review', spawnFn: okStub, verifyFn: makeVerify(0) });
+  if (reviewRun.verify_ok !== null) throw new Error('review 不應跑機器組');
+  if (verifyCalls.length !== beforeReview) throw new Error('review 仍呼叫了機器組');
 }
 
 if (process.argv.includes('--self-test')) {
@@ -509,7 +578,8 @@ if (process.argv.includes('--self-test')) {
 } else {
   const result = await dispatch(parseArgs(process.argv.slice(2)));
   if (!result.ok) { process.stderr.write(`${result.message}\n`); process.exit(result.code); }
-  const output = { ticket: result.ticket, role: result.role, round: result.round, code: result.code, report: result.report, last_message: result.last_message };
+  const output = { ticket: result.ticket, role: result.role, round: result.round, code: result.code, report: result.report, last_message: result.last_message, verify_ok: result.verify_ok, verify_report: result.verify_report };
   process.stdout.write(`${JSON.stringify(output)}\n`);
-  if (result.code !== 0 || result.timed_out) process.exit(1);
+  // 機器組紅燈一律非零退出：協調者不得把未過交件閘的票當成交件。
+  if (result.code !== 0 || result.timed_out || result.verify_ok === false) process.exit(1);
 }

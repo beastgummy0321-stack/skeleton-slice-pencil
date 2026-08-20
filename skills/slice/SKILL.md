@@ -36,7 +36,8 @@ description: 做下一片——初始化之後的一切開發入口：換真線�
 | 大 | 願望涉及 >1 畫面或預估 >1 票 | 全切後打＋單台調度：先 /to-spec 出規格書 → /to-tickets 垂直切完全部票 → 產出 pipeline.json（approved=false）→ 使用者點頭後改 true → 依序背景派工 → 立即引導使用者 grill 下一個功能區塊（workflow.md 七＋十） |
 
 大路線交接動作（對話台做完就回到使用者身上，全程使用者零操作）：
-1. pipeline.json 寫齊每票的 branch／blocked_by／shared_files／migration 欄（機器閘門依據）。
+1. pipeline.json 寫頂層 `verify`（機器組指令）＋每票的 branch／shared_files／migration 欄（機器閘門依據）。
+   `blocked_by` 選填——看板排序即依賴序，只有真的要機器擋順序時才填。
 2. 使用者點頭改 `approved=true`。
 3. 依序以背景任務跑 wrapper 派無阻擋票；派工後立即引導使用者 grill 下一塊；
    完工通知到了再回來安排審查——不得讓使用者乾等。
@@ -66,11 +67,14 @@ UNKNOWN 收錄門檻（防規劃無限延長）：只收不可逆表命中、或
 
 照凍結 schema 實作真 handler。
 派實作 subagent 時附：凍結 schema 原文＋本 plugin 的 `rules/container-contract.md`（本 SKILL.md 上兩層的 rules 目錄） 原文（不摘要、不重寫）。
-金流／解析／複雜分支 → /tdd。type check＋depcruise＋測試全綠才過。
+金流／解析／複雜分支 → /tdd。
+交件閘＝機器組：type check＋depcruise＋受影響測試＋build 全綠才准進審查（workflow.md 五）。
+wrapper 派工時自動跑；沒走 wrapper 時由對話台在驗收前手動跑一次，不得省略。
 派工後不等交件：告知使用者「後台開工了，約＜具體時間＞」，隨即回第 1 節開場節奏——
 帶使用者做下一片的①站補問、或念看板挑片；交件通知（worker_done）到了再回本片驗收。
 派工後讓使用者乾等進度一律禁止；下一片①站與本片②③站因此形成常態重疊。
-關卡：全綠＋獨立 agent 驗收（實作者不得自驗）。
+關卡：機器組全綠＋獨立 agent 驗收（實作者不得自驗）。
+票面標記金流／解析／狀態機者才另排一次 Sol；其餘票型機器組全綠後直接進獨立審查。
 
 ### ③ 換真線
 

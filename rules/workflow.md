@@ -8,21 +8,21 @@
 環境變數 `CODEX_EXEC_BIN` 有值，或 PATH 可解析到 `codex` 執行檔 → exec 條款全檔照辦。
 兩者皆無 → 本檔所有 exec 條款停用，改為：
 實作與探查派內建 subagent（Task／Agent 工具），審查由未參與實作的獨立 subagent 執行。
-其餘條款（規格凍結、退件制度、耦合紀律、DoR）照舊，一條不減。
-
+其餘條款（規格凍結、交件閘、耦合紀律、DoR）照舊，一條不減。
+無 wrapper 時第五節機器組改由協調者在合併前手動跑一次 `verify` 指令，不得省略。
 ## 一、兩側分工（強制）
 
 | 階段 | 由誰做 | 交出什麼 |
 |---|---|---|
 | 討論、發想、方案仲裁 | Claude | 定案結論 |
-| 凍結規格 | Claude | 票：DoR 五答 ＋ 可判定驗收清單 |
+| 凍結規格 | Claude | 票：三欄 ＋ 可判定驗收清單 |
 | 實作 | Codex Terra | 程式碼 ＋ 可執行自測 |
-| 交件前內部審查 | Codex Sol | 內部退改（不計入退件數） |
-| 交件後獨立審查 | Claude | 通過，或退件（附分類） |
+| 交件閘 | 機器組（wrapper 跑 verify） | 全綠才准進審查 |
+| 交件後獨立審查 | Claude | 通過，或說明哪裡不對並重派 |
 
 Claude 不寫實作程式碼。Codex 不改規格。任一方要跨線，停下回報使用者。
 **唯一豁免＝slice 路線 A／B 快改**（純樣式／文案，或不動 schema 與模組進入點的行為修改）：
-由對話 Claude 直接改，不開 run、不派工、不計退件；一旦動到 schema 或模組進入點，
+由對話 Claude 直接改，不開 run、不派工；一旦動到 schema 或模組進入點，
 當場升級 C 路線，照本節分工。
 上下文一律以檔案傳遞（票＋驗收清單）。
 
@@ -41,6 +41,7 @@ node scripts/dispatch.mjs --ticket <票號> --cwd <projectRoot> --role impl|revi
 - 審查 role 寫不進 worktree：review 的可寫根（-C）＝reviews 目錄、scout＝reports 目錄；審查不得改碼，由機器強制
 - 上下文一律以檔案傳遞：spec 只傳票檔與報告路徑，不夾帶規格內容
 - 模型與檔位由 wrapper 固定（Terra／Sol＝high、Luna＝low），不得依賴 config.toml 全域值
+- impl worker 退出後 wrapper 自動跑第五節機器組（`pipeline.json` 的 `verify`），結果落盤 `reports/<票號>-r<輪>-verify.txt` 並回傳 `verify_ok`
 
 ## 三、模型分工
 
@@ -49,7 +50,7 @@ node scripts/dispatch.mjs --ticket <票號> --cwd <projectRoot> --role impl|revi
 - **Fable**：方向、系統邊界、不可逆決策、方案仲裁、多票優先序。
   不做 Repo 全面掃描、不讀原始長日誌、不寫程式碼、不進 fix／retry 迴圈。
 - **Opus**：技術架構、跨模組整合、複雜 Root Cause。
-  不可逆項目（改資料庫結構、金流、核心架構、公開 API 契約）的退件判定由 Opus 做。
+  不可逆項目（改資料庫結構、金流、核心架構、公開 API 契約）的重派判定由 Opus 做。
 - **Sonnet**：預設審查者。獨立驗證、規格文字化、技術文件。
   對同一問題連續兩輪無進展才升級 Opus；不因任務「重要」自動升級。
 - **Haiku**：唯讀探查、檔案盤點、規則掃描、日誌摘要。不做最終驗收。
@@ -58,103 +59,70 @@ node scripts/dispatch.mjs --ticket <票號> --cwd <projectRoot> --role impl|revi
 
 模型描述取自 Codex `models_cache.json`，不得憑記憶改寫。
 
-- **gpt-5.6-sol**（frontier）：交件前第一階段審查、複雜 Root Cause。
-  審查時不得改碼，一律退回 Terra 改。
+- **gpt-5.6-sol**（frontier）：**只用於例外**——票面標記金流／解析／狀態機三類的審查、複雜 Root Cause。
+  一般票由第五節機器組把關，不排 Sol。審查時不得改碼，一律退回 Terra 改。
 - **gpt-5.6-terra**（balanced）：預設實作主力。
 - **gpt-5.6-luna**（fast）：唯讀探查、檔案盤點、日誌摘要。不做審查、不做最終驗收。
-
 ## 四、規格凍結（Claude 端，Codex 開工前）
 
-凍結規格時逐項答完 `<plugin>/rules/code-rules.md`「不可逆決定」表的五個項目，
-禁止以「先跑通再說」「之後再重構」代替答案。
+票面三欄，缺一即 DoR 未達成，Codex 不得開工，Claude 不得審查：
 
-同時產出**驗收清單**：每條須能用「跑起來看得到」或「測試會紅」判定。
-缺五答或缺驗收清單即為 DoR 未達成，Codex 不得開工，Claude 不得審查。
-本節定案內容用 `domain-modeling` skill 記成一則決策紀錄（決定／理由／當時排除了什麼）。
+1. **要什麼**：API 契約附 JSON 字面範例；使用者可見字串附格式範例字面（一句範例，非文字描述）；
+   每個資料點寫明「落盤」或「即時算」
+2. **怎麼算過**：可判定驗收清單，每條須能用「跑起來看得到」或「測試會紅」判定
+3. **會碰哪些共用檔**：`shared_files` 清單（第六節四護欄依據）；帶 migration 時標明
 
-票面另須含下列欄位，缺一即 DoR 未達成：
+不可逆決定（資料模型／邊界／同步異步／錯誤邊界）在 `/slice` ①站補問凍結時處理，
+用 `domain-modeling` skill 記一則決策紀錄（決定／理由／當時排除了什麼），不重複進票面。
+欄位不適用者寫「N/A＋原因一句」即為達成；審查不得以 N/A 欄位判 DoR 未達成。
 
-- 每個資料點寫明「落盤」或「即時算」，二選一不得留白
-- 使用者可見字串附格式範例字面（一句範例，非文字描述）
-- API 契約附 JSON 字面範例；實作與審查以 diff 比對字面，不得僅靠解讀散文
-- 預答欄：可預見的實作提問與裁決先寫進票尾（共用檔例外、既有機制選型等）
-- 測試指令字面：開發中跑的受影響測試檔清單＋機器閘門快測組（架構邊界＋術語 lint，30 秒級）；
-  完整套件命令一律帶平行參數（pytest 為 `-n auto`）
-- 附 Luna／Haiku 預掃的受影響檔現況摘要一頁；豁免時票面寫明「免預掃」與原因一句
-- 實作紀律三條（票面原文照抄給 worker）：金流／解析／狀態機接縫照票面預定接縫走 TDD；
-  開發中只跑型別檢查＋受影響單檔測試；完整套件只在交件前跑一次。
-  worker 自行宣告審查通過或自行合併主幹一律禁止，審查與合併歸協調者
-- 票面欄位不適用者，寫「N/A＋原因一句」即為達成；審查不得以 N/A 欄位判 DoR 未達成
+金流／解析／狀態機接縫照票面預定接縫走 TDD。開發中只跑型別檢查＋受影響單檔測試；
+完整套件由第五節機器組在交件時跑一次。
+worker 自行宣告審查通過或自行合併主幹一律禁止，審查與合併歸協調者。
 
-## 五、退件制度（強制）
+## 五、交件與重派（強制）
 
-### 計數口徑
+### 機器組＝交件閘
 
-只有「Codex 交件 → Claude 退回」算一次。Codex 內部 Sol 審查的來回不計數。
-Sol 內部審查與 Claude 獨立審查並行執行時，兩邊發現合併為單輪退回。
-零退件票，Sol 只上場一次：首輪審即終審，合併前不得再排 Sol。
-有退件票的終審，Sol 只驗退件項回歸＋一項新破壞檢查，全套重跑禁止；中間退件輪複驗由 Claude 側審查者單審。
+impl worker 退出後，wrapper 立即在該票 worktree 執行 `pipeline.json` 的 `verify` 指令
+（型別檢查＋邊界檢查＋受影響測試＋build，30 秒～2 分鐘級）。
+輸出落盤 `reports/<票號>-r<輪>-verify.txt`，結果寫入 exit 紀錄的 `verify_ok`。
 
-### 分類（退件時必填，二選一）
+- 機器組紅燈＝未交件：協調者以 `--redispatch` 把 verify 輸出退回 worker，不排審查、不算一輪
+- `verify` 欄缺漏時 wrapper 跳過並回傳 `verify_ok: null`；跳過即視同未驗，審查者不得引用為通過依據
+- worker 的文字宣稱一律不得作為通過依據；一律以機器組輸出與 `git diff` 為準
+- 審查一律不重跑完整套件；引用機器組輸出並註明是引用
 
-- `impl`：規格清楚、實作沒照做 → 計數 ＋1，退回 Codex 改
-- `spec`：規格本身有洞、Codex 照做但方向錯 → **不計數**，中止本票、回第四節重凍規格、計數歸零
+### 獨立審查（Claude 側）
 
-第二次退件時 Claude 必須明確宣告本票卡點屬 `impl` 或 `spec`，不得拖到第三次。
-同一票 spec 重凍以 2 次為限；第 3 次觸發即停票，交使用者裁決。
+機器組全綠後，由未參與實作的 Claude 審查者看 diff 對驗收清單。
+通過即合併；不通過即說明哪裡不對、重派。
+退件序號、退件分類（impl／spec）、退件單格式一律不設——說哪裡不對即可。
 
-一般 `impl` 退件重派一律以 `node scripts/dispatch.mjs --ticket <票號> --cwd <root> --role impl --redispatch`
-執行；round 必須加 1；不得使用 `--retry-of`。
+### Sol 只在例外上場
 
-### 退件紀錄
+預設不排 Sol。只有票面標記 `金流｜解析｜狀態機` 三類之一的票，才在機器組全綠後加排一次 Sol。
+其餘票型一律機器組全綠後直接進獨立審查。
 
-由退件方（Claude）寫，實作方不得修改。放專案指定的 issue 目錄；
-專案未指定時放 `.scratch/reviews/<票號>-r<輪次>.md`（與該輪審查報告同檔，一輪一份，不得覆寫舊輪）。每次退件寫入：
-退件序號、分類、引用的驗收條目、Codex 這次改了什麼。
-退件單必填「已否決方案」欄：上一輪試了什麼、為何不行，一行一條；缺此欄的退件單不得作為重派依據。
+### 三次停止（機器強制）
 
-### 三次停止
+同一票 impl 重派累計三次即停票、不得再派工，交使用者裁決並附：
+三次各自原因、一句話結論（卡點是規格沒定死或實作沒做到）。
+本條由派工閘以 `status=rejected 且 round>=3` 強制。
 
-同一票 `impl` 退件累計三次，停止本票、不得再派工，並在紀錄結尾補一段交給使用者：
-三次原因、Claude 判定依據、一句話結論（卡點是規格沒定死或實作沒做到）。
-本條由派工閘機器強制：票 status=rejected 且 round>=3 一律拒派，被擋的票停票交使用者裁決。
+### 複驗範圍
 
-### 謊報即換人
+第二輪起只驗上一輪列出的問題項＋一項「本輪新破壞」檢查；首輪已判過的驗收條目不得重驗、不得重讀那些檔。
 
-審查發現 worker「宣稱已修但 diff 無對應修改」→ 該 worker 終端立即汰換，
-換新終端接手同一票；同一個上下文的 worker 不得再獲重試機會。退件計數照算。
-審查一律以 diff 為準核對修正宣稱，worker 的文字宣稱不得作為通過依據。
+### 飄動測試
 
-### 審查份量按 diff 分級（強制）
-
-審查要跑的東西以本票 `git diff --stat` 的變更行數（新增＋刪除）為準，票面寫明級別：
-
-| 本票 diff 行數 | 審查者要跑 | 完整測試套件 |
-|---|---|---|
-| < 150 | 型別檢查＋受影響單檔測試＋前端 build；動到畫面時加瀏覽器實測 | 由交件方跑一次，審查者不得重跑 |
-| < 150 且不碰金流／schema／模組進入點 | 上列同級內容，且免 Sol 內部審查，只跑 Claude 獨立審查 | 由交件方跑一次，審查者不得重跑 |
-| 150–600 | 上列全部 | 審查者自跑一次 |
-| > 600 | 上列全部＋拔根測試 | 審查者自跑一次 |
-
-票面未寫級別即為 DoR 未達成，審查不得開始。
-審查報告引用交件方的測試結果時，一律註明是引用而非自跑。
-
-### 複驗只驗退件項（強制）
-
-第二輪起的審查只驗退件單列出的項目，外加一項「本輪新破壞檢查」。
-首輪已判過的驗收條目不得重驗、不得重複讀那些檔。
-複驗要跑什麼依上表以**本輪 diff** 分級，不得沿用首輪級別。
-
-### 飄動測試不計退件（強制）
-
-審查遇到測試紅燈，先單獨重跑該測試檔。單獨跑會過即判定為飄動：
-本輪不得據此退件，報告寫明測試名稱與兩次結果。
-同一個飄動測試在兩輪審查內出現第二次，當場開隔離票排進看板最前，不得留給收尾票。
+測試紅燈先單獨重跑該檔；單獨跑會過即為飄動，本輪不得據此重派，紀錄測試名稱與兩次結果。
+同一飄動測試兩輪內出現第二次，當場開隔離票排進看板最前。
 
 ## 六、常設編制（中小票免逐張提計畫）
 
 經此規範授權後直接開工、不需逐張請示：
-Claude 凍結規格 → Codex Terra 實作（Sol 交件前審）→ Claude Sonnet 獨立審查
+Claude 凍結規格 → Codex Terra 實作 → 機器組交件閘（wrapper 自動跑）→ Claude Sonnet 獨立審查
 → 涉及 UI 時加瀏覽器實測驗收（各專案自訂視口標準）→ 需要時 Luna／Haiku 唯讀探查先行。
 
 **仍需使用者批准才動工的例外**：改資料庫結構（migrations）、碰金流／付費 API 簽約、
@@ -179,7 +147,7 @@ Claude 凍結規格 → Codex Terra 實作（Sol 交件前審）→ Claude Sonne
 - 畫面契約凍結後，前端票與後端票雙工人並行；同時開第二實作工人一律 worktree 隔離，
   不得兩個實作工人共用同一工作區
 - 每批過獨立驗收後立即 commit；前批未 commit 前，下一批不得修改與前批重疊的檔案
-- 免 migration、不碰金流、純黏合的批次，做後端與換真線可合併一票交付；雙審查不得因此省略
+- 免 migration、不碰金流、純黏合的批次，做後端與換真線可合併一票交付；機器組與獨立審查不得因此省略
 - 完工通知到達即安排審查；worker 為子行程，交件即退出，無閒置 worker
 - 主幹紅燈或合併衝突 → 協調者開 hotfix 票（檔名含 hotfix），寫入 pipeline.json 佇列最前、
   blocked_by 空，經 wrapper 派工修復；hotfix 在飛期間其他線不得合併
@@ -246,20 +214,22 @@ grill、凍票、派工（背景任務）、收完工通知、安排審查、合
 ### pipeline.json（機器閘門依據，/to-tickets 收尾時產出）
 
 ```json
-{"mode":"dual","approved":false,"tickets":[{"id":"01","file":"issues/01-x.md",
- "branch":"line-01","status":"pending","blocked_by":[],"shared_files":[],"migration":null}]}
+{"mode":"dual","approved":false,"verify":"npm run verify","tickets":[{"id":"01",
+ "file":"issues/01-x.md","branch":"line-01","status":"pending","shared_files":[],"migration":null}]}
 ```
 
 - status 取值：pending｜dispatched｜approved｜merging｜merged｜stopped｜rejected
 - approved 由使用者點頭後改 true；false 時派工閘擋下全部派工
+- `verify`（頂層）＝第五節機器組指令，在票的 worktree 執行。缺此欄 wrapper 跳過機器組並回傳 `verify_ok: null`
+- 必填票欄＝id｜file｜branch｜status｜shared_files｜migration。`blocked_by` 選填：
+  看板排序即依賴序，只有真的要機器擋順序時才填
 - 檔名含 review 的審查票不入 pipeline.json、不受派工閘管
 - 派工指令的 spec 必須引用票檔路徑（`.scratch/<effort>/issues/*.md`），否則派工閘擋下
 
 ## 十一、上下文預算
 
 - 派工只准執行 `node scripts/dispatch.mjs`。
-- pipeline.json 必須落盤票的 status 與 round，收工必須落盤 exit 與 history（每筆含 role、round、code、timed_out、duration_s、last_message）；訊息全文必須落盤 reports/。
+- pipeline.json 必須落盤票的 status 與 round，收工必須落盤 exit 與 history（每筆含 role、round、code、timed_out、duration_s、last_message、verify_ok）；訊息全文必須落盤 reports/。
 - 票檔不得超過 150 行；超限票必須回 /to-tickets 重切。
 - last-message 本文必須恰為兩行：結論一行與報告檔路徑一行。
 - AGENTS.md 的 skeleton-slice 內嵌區塊必須等於 code-rules 第三節、第六節與 container-contract.md；漂移即不得交件。
-
