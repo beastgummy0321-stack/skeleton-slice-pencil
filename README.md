@@ -18,7 +18,7 @@
 ## 安裝
 
 ```bash
-claude plugin marketplace add beastgummy0321-stack/skeleton-slice
+claude plugin marketplace add beastgummy0321-stack/skeleton-slice-pencil
 claude plugin install skeleton-slice-pencil@skeleton-slice-pencil
 ```
 
