@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 const root = process.env.CLAUDE_PLUGIN_ROOT || process.env.PLUGIN_ROOT;
 if (root) {
-  const files = ['preamble.md', 'workflow.md', 'reuse-first.md', 'code-rules.md'];
+  const files = ['preamble.md', 'workflow.md', 'reuse-first.md'];
   let out = '';
   for (const f of files) {
     try { out += readFileSync(join(root, 'rules', f), 'utf8') + '\n\n'; } catch {}

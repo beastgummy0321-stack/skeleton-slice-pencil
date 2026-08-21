@@ -33,15 +33,7 @@ description: 做下一片——初始化之後的一切開發入口：換真線�
 | B | 動行為，schema 與模組進入點皆不動 | 快改：確認「哪個畫面＋期望行為」→ 改 → 四態抽查 → 回報。不進看板 |
 | C | 換真線／動 schema／動進入點 | 開片（或認領既有 `[ ]` 行）→ 三站 |
 | 新畫面或新狀態 | 原型裡沒有的頁，或原型裡沒有的使用者可見狀態（modal／權限／新表單） | 先照 /skeleton 第 4 節同風格錨生成假資料版（含該節「原型天花板」）＋看板加行，再走 C |
-| 大 | 願望涉及 >1 畫面或預估 >1 票 | 全切後打＋單台調度：先 /to-spec 出規格書 → /to-tickets 垂直切完全部票 → 產出 pipeline.json（approved=false）→ 使用者點頭後改 true → 依序背景派工 → 立即引導使用者 grill 下一個功能區塊（workflow.md 七＋十） |
-
-大路線交接動作（對話台做完就回到使用者身上，全程使用者零操作）：
-1. pipeline.json 寫頂層 `verify`（機器組指令）＋每票的 branch／shared_files／migration 欄（機器閘門依據）。
-   `blocked_by` 選填——看板排序即依賴序，只有真的要機器擋順序時才填。
-2. 使用者點頭改 `approved=true`。
-3. 依序以背景任務跑 wrapper 派無阻擋票；派工後立即引導使用者 grill 下一塊；
-   完工通知到了再回來安排審查——不得讓使用者乾等。
-4. 每個回合開頭讀 `escalations.md`，不限 grill 段落結束，有項目先帶使用者裁決再續問。
+| 大 | 願望涉及 >1 畫面或預估 >1 票 | 全切後打：先 /to-spec 出規格書 → /to-tickets 垂直切完全部票 → 使用者點頭 → 無交集的票同時派 Sonnet 實作（worktree 隔離）→ 立即引導使用者 grill 下一個功能區塊（workflow.md Tickets） |
 
 B 路線中途發現要動 schema → 當場升級 C，告知使用者。
 
@@ -65,21 +57,19 @@ UNKNOWN 收錄門檻（防規劃無限延長）：只收不可逆表命中、或
 
 ### ② 做後端
 
-照凍結 schema 實作真 handler。
+照凍結 schema 實作真 handler（派 Sonnet）。
 派實作 subagent 時附：凍結 schema 原文＋本 plugin 的 `rules/container-contract.md`（本 SKILL.md 上兩層的 rules 目錄） 原文（不摘要、不重寫）。
 金流／解析／複雜分支 → /tdd。
-交件閘＝機器組：type check＋depcruise＋受影響測試＋build 全綠才准進審查（workflow.md 五）。
-wrapper 派工時自動跑；沒走 wrapper 時由對話台在驗收前手動跑一次，不得省略。
+交件閘＝機器組：type check＋depcruise＋受影響測試＋build 全綠才准進審查（workflow.md Gate）；對話台在驗收前跑一次，不得省略。
 派工後不等交件：告知使用者「後台開工了，約＜具體時間＞」，隨即回第 1 節開場節奏——
-帶使用者做下一片的①站補問、或念看板挑片；交件通知（worker_done）到了再回本片驗收。
+帶使用者做下一片的①站補問、或念看板挑片；交件通知到了再回本片驗收。
 派工後讓使用者乾等進度一律禁止；下一片①站與本片②③站因此形成常態重疊。
-關卡：機器組全綠＋獨立 agent 驗收（實作者不得自驗）。
-票面標記金流／解析／狀態機者才另排一次 Sol；其餘票型機器組全綠後直接進獨立審查。
+關卡：機器組全綠＋一輪 Sonnet 獨立審查（只對驗收清單與 container-contract；風格意見記備註、不退件；最多複審一次，爭議由主對話裁決）。
 
 ### ③ 換真線
 
 移除該片假資料源。前端 diff 必須為零（有 diff＝違約，停下回報）。Playwright 冒煙過。
-拔根測試（container-contract 八）：暫時移除本模組資料夾＋註冊行 → build 過、主畫面載入 → 還原。
+拔根測試（container-contract 第 6 點）：暫時移除本模組資料夾＋註冊行 → build 過、主畫面載入 → 還原。
 不過＝有東西綁死了，修到過才算完工。
 使用者再玩一次 → 點頭。
 收工動作（一次做完）：BOARD.md 刪行｜commit `slice-NN done: <名>`｜
@@ -96,4 +86,4 @@ wrapper 派工時自動跑；沒走 wrapper 時由對話台在驗收前手動跑
 
 ## 4. Subagent 回報格式
 
-結論＋檔路徑:行號＋跳過了什麼。複述整份檔案內容一律禁止（code-rules 六）。
+結論＋檔路徑:行號＋跳過了什麼。複述整份檔案內容一律禁止。

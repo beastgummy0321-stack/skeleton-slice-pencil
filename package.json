@@ -1,8 +1,8 @@
 {
   "name": "skeleton-slice-pencil",
-  "version": "3.3.0",
+  "version": "4.0.0",
   "private": true,
   "scripts": {
-    "test": "node scripts/dispatch.mjs --self-test && node hooks/gates.test.mjs && node hooks/budget.test.mjs"
+    "test": "node hooks/budget.test.mjs"
   }
 }

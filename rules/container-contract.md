@@ -1,53 +1,14 @@
-# 集裝箱憲章（模組邊界）
+# Container contract (module boundaries)
 
-適用所有專案。與 workflow.md 第五節、screen-contract.md（同目錄） 第六、十二節互相引用，不重複條文。
+Machine-enforced by dependency-cruiser on pre-commit (prove it red once when wiring it up):
+- Cross-module imports go through the module's single entry file (`index.ts`) only.
+- No dependency cycles. Modules never import the app shell (`src/app`).
 
-## 一、模組登記（開工前）
+Checked by the reviewer (not by the implementer):
 
-每個模組動工前必須交出邊界定案四行，缺一即不得開工：
-
-1. 對外進入點：唯一一個檔案路徑
-2. 輸入輸出形狀：進入點每個函式的參數與回傳形狀
-3. 誰依賴它：呼叫端清單
-4. 不碰什麼：明列它禁止 import 或修改的區域
-
-四行記入該模組的 spec 或票券。票券未引用邊界定案者視為未定案。
-
-## 二、唯一進入點
-
-- 模組對外只有一個進入點檔。外部 import 模組內部其他檔案一律禁止。
-- 進入點未列出的函式、變數、狀態，外部一律不得使用。
-
-## 三、狀態不外洩
-
-- 模組內部狀態只准在模組內讀寫。跨模組直接讀寫他模組狀態一律禁止。
-- 跨模組傳遞資料只走進入點的參數與回傳值。共用可變全域一律禁止。
-
-## 四、依賴單向
-
-- A 認識 B，B 不得認識 A（含事件、callback、共用可變狀態）。
-- 發現依賴成環 → 停下回報，不得自行改依賴方向。
-
-## 五、錯誤不穿牆
-
-- 進入點每個函式必須定義錯誤回傳形狀。例外未攔截直接穿出模組邊界即為未完成。
-- 停用任一非核心模組後，主畫面必須仍可載入。主畫面清單由各專案列出，此為驗收項。
-
-## 六、接口即契約
-
-- 改進入點簽名＝改契約，走 screen-contract.md（同目錄） 第九節的變更流程，不得偷改。
-- 假資料形狀（screen-contract.md（同目錄） 第十二節）與進入點輸出形狀必須一致，不一致即為未完成。
-
-## 七、機械閘門（技術棧定案後掛上）
-
-- 第二、四節以現成工具在 hook／pre-commit 執行，依技術棧選：dependency-cruiser、
-  eslint-plugin-boundaries（JS/TS）、import-linter（Python）。自寫掃描器一律禁止。
-- 閘門未掛上前，第二、四節由獨立驗證 agent 逐條核對，實作者不得自驗。
-
-## 八、好找優先（Vibe coding：規範 AI 輸出路徑，不遷就程式員美學）
-
-- 模組目錄名＝使用者看得到的畫面／功能名。從功能地圖的名字到 `src/modules/<名>/` 一步可達，禁加中間層。
-- 命名取使用者語言的詞；技術抽象詞（Manager／Helper／Util／Base）禁作模組名。
-- 跨模組重複程式碼准許。跨模組抽共用禁止，直到第 3 個真實呼叫端出現；抽出者必須成為登記過邊界四行的獨立模組。
-- 拔根測試：刪除任一非核心模組資料夾＋其註冊行後，build 必須過、主畫面必須載入。此為 /slice 換真線站驗收項。
-- 兩寫法擇一時，取 agent 用 Grep／檔名一步找到的那個，不取呼叫端行數最少的那個。
+1. **Register before you build.** New module = 4 lines in the ticket: entry file path; input/output shape of each exported function; who calls it; what it must not import or touch.
+2. **State stays inside.** Data crosses modules only as entry-point arguments and return values. No shared mutable globals, no reaching into another module's state.
+3. **Errors don't leak.** Every entry-point function defines its error return shape. Disabling any non-core module must leave the main screen loading.
+4. **Interface is the contract.** Changing an entry-point signature or the mock data shape = changing the contract → back to /slice station ①. Mock shape must equal entry-point output shape.
+5. **Findable over elegant.** Module dir name = the screen/feature name the user sees, directly under `src/modules/<name>/`, no intermediate layers; no Manager/Helper/Util/Base as module names. Duplicate code across modules is fine; extract shared code only at the 3rd real caller, and the extraction becomes its own registered module.
+6. **Pull-out test** (route C, station ③): delete a non-core module folder + its registration line → build passes, main screen loads → restore.

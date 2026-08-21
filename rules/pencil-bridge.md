@@ -10,9 +10,9 @@ schema 凍結後的 pencil 改動一律降級為 slice 路線 A；碰到模組�
 ## 一、邊界（禁令）
 
 1. Pencil MCP 只掛協調者，只做設計檔的讀寫。禁止用它寫專案程式碼
-2. Codex worker 禁止掛 Pencil MCP。worker 讀到的設計一律是協調者 dump 出來的 JSON 快照
+2. 實作 subagent 禁止掛 Pencil MCP。subagent 讀到的設計一律是協調者 dump 出來的 JSON 快照
 3. 禁止使用 Pencil 內建的 coding agent（面板的 Set Repository → 產 React）。
-   那條路繞過 dispatch 閘與 verify 閘
+   那條路繞過規格凍結與機器組交件閘
 4. `Export(nodes,"html-tailwind",path)` 的產物禁止進 `src/`。
    實測兩份 export：`var(--)` 出現 0 次、硬編 hex 88 處、掛 `cdn.tailwindcss.com`（v3 play CDN）
 5. `src/` 禁止出現未登記在 `globals.css` 的色票 hex。
@@ -85,6 +85,6 @@ node bin/pen-verify.mjs design/<畫面組>.pen
 
 ## 六、開票
 
-設計快照 → React component 這一步一律開票派 Codex Terra，過 verify 閘。
+設計快照 → React component 這一步一律開票派 Sonnet，過機器組交件閘。
 票必須附：快照路徑、html 參考稿路徑、hex → CSS 變數對照表、設計 vs 實作差異清單。
 缺任一項即為票不完整，不得派工。

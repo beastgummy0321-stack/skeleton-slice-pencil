@@ -32,9 +32,9 @@ claude plugin install skeleton-slice-pencil@skeleton-slice-pencil
 | `skills/slice/` | 日常入口：分流（快改／三站切片：補問凍結→做後端→換真線＋拔根測試）、斷點續跑 |
 | `skills/container-contract/` | 集裝箱憲章觸發器 |
 | `skills/setup-workflow/` | 外部依賴安裝精靈 |
-| `rules/` | 規範本體：container-contract（模組邊界五原則＋好找優先）、screen-contract（畫面契約）、workflow（多 Agent／Codex 分工＋無 Orca fallback）、reuse-first（不重複造輪）、code-rules（Code 階段硬規定） |
-| `hooks/session-rules.mjs` | SessionStart 把 workflow／reuse-first／code-rules 全文注入每個 session |
-| `hooks/load-budget.mjs` | PostToolUse 規範檔閘門：500 行上限＋勸導詞攔截 |
+| `rules/` | 規範本體（英文，共約 90 行）：workflow（模型分工 Fable→Opus→Sonnet→Haiku＋交件閘）、reuse-first、container-contract（模組邊界）、screen-contract（畫面契約） |
+| `hooks/session-rules.mjs` | SessionStart 把 workflow／reuse-first 注入每個 session |
+| `hooks/load-budget.mjs` | PostToolUse 規範檔閘門：CLAUDE.md／AGENTS.md 及 @ 引用檔合計 500 行上限 |
 
 ## 外部依賴（/setup-workflow 代裝，先問過你）
 
@@ -42,15 +42,14 @@ claude plugin install skeleton-slice-pencil@skeleton-slice-pencil
 - [ayghri/i-have-adhd](https://github.com/ayghri/i-have-adhd)：輸出格式紀律
 - [mattpocock/skills](https://github.com/mattpocock/skills)（官方 marketplace `mattpocock-skills`）：grilling、to-tickets、tdd、domain-modeling、wizard、research、to-questionnaire
 
-選配（有裝就用，沒裝跳過）：Orca＋Codex（workflow.md 的派工分工；查無時自動 fallback 內建 subagent）、
-[leonxlnx/taste-skill](https://github.com/leonxlnx/taste-skill)、[pbakaus/impeccable](https://github.com/pbakaus/impeccable)、
+選配（有裝就用，沒裝跳過）：[leonxlnx/taste-skill](https://github.com/leonxlnx/taste-skill)、[pbakaus/impeccable](https://github.com/pbakaus/impeccable)、
 [nextlevelbuilder/ui-ux-pro-max-skill](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill)：前端生成與打磨、
 [kevintsai1202/Humanizer-zh-TW](https://github.com/kevintsai1202/Humanizer-zh-TW)：繁中文案去 AI 味（非 plugin，手動裝到 `~/.claude/skills/`）。
 四者合稱 Frontend Pack，安裝與降級規則見 `/setup-workflow`。
 
 ## 已有全域規範的機器注意
 
-`~/.claude/CLAUDE.md` 已 @ 匯入 workflow.md／reuse-first.md／code-rules.md 者，
+`~/.claude/CLAUDE.md` 已 @ 匯入 workflow.md／reuse-first.md 者，
 與本 plugin 的 SessionStart 注入重複——二選一，移除 @ 匯入行或不啟用本 plugin hook。
 
 ## 流程一頁圖
@@ -87,7 +86,7 @@ claude plugin install skeleton-slice-pencil@skeleton-slice-pencil
 ### 收編邊界（一句話版）
 
 Pencil 只當設計檔的讀寫介面，**不是第三個寫程式的人**。
-`.pen` → React component 一律開票派 Codex，過 verify 閘。細節看 `rules/pencil-bridge.md`。
+`.pen` → React component 一律開票派 Sonnet，過機器組。細節看 `rules/pencil-bridge.md`。
 
 ### 實測基準（Pencil 1.2.0 / Windows 11 / 2026-08-20，兩輪丟棄專案試跑）
 

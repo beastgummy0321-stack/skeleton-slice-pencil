@@ -41,7 +41,7 @@ repo 有既有原始碼（package.json 或 src 非空）→ 走第 5 節「舊�
 
 業務細節題（假資料階段不影響答案者）記入 UNKNOWN 清單推遲到 /slice。
 使用者自己也答不出的題 → /to-questionnaire 生成問卷讓他拿去問懂的人。
-凍結線（防規劃無限延長）：訪談只凍兩類——code-rules「不可逆決定」表命中項、
+凍結線（防規劃無限延長）：訪談只凍兩類——不可逆決定（資料模型／邊界／同步異步／錯誤邊界）、
 使用者看得到的行為。線外細節（可逆、單模組內部、換個做法只改一處）禁問禁凍，
 帶進實作由 agent 自決＋標 `ponytail:` 註解或記可反悔清單。
 線外議題討論兩輪即記可反悔、開工，禁第三輪。
@@ -155,8 +155,7 @@ ui-ux-pro-max 與 taste-skill 兩者皆缺 → 對話台 Claude 自出 3 版候�
 
 2. 專案 `CLAUDE.md`：抄 `assets/project-claude-template.md` 填空後寫入。
    專案已有 CLAUDE.md → 停下問使用者怎麼併，不得覆蓋。
-3. 產 AGENTS.md 時必須加入 `<!-- skeleton-slice:rules:begin -->` 與 `<!-- skeleton-slice:rules:end -->`；
-   標記間內容必須逐字放入本 plugin `rules/code-rules.md` 的第三節與第六節，再接 `rules/container-contract.md` 全文。
+3. AGENTS.md 不內嵌規則；模組邊界規則由 /slice 派工時附 `rules/container-contract.md` 原文。
 4. 開場廣播由專案 CLAUDE.md 第一節承擔（開 session 先讀 BOARD.md、有 [>] 主動報站）。
 
 ## 7. 收工檢核（全過才報完工）

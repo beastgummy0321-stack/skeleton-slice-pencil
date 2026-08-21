@@ -1,34 +1,7 @@
-# Reuse-first, 禁止重造輪子（全域、強制）
+# Reuse first
 
-優先用現成方案，不自己重造。動手寫之前先搜尋。回報用白話文。
-
-## 一、能力層（任何功能需求，寫程式前）
-依序搜尋：既有 skills（有 find-skills 就用）→ plugins → MCP servers → 開源方案（GitHub / HF / npm / PyPI）。都沒有 → 進入第二層。
-
-篩選條件：12 個月內有維護、授權條款明確且相容、有一定採用量、無可疑的資料外流行為。全部不通過 → 明講，改為建議自建；不得硬湊結果充數。
-
-找到 → 回報：依符合度列前 ≤3 個（名稱｜來源｜最後更新｜授權｜採用量｜涵蓋範圍與缺口），附一句話建議，接著**安裝前先問過使用者**（裝什麼、從哪裝、權限與費用、如何移除）。未經同意 = 不得安裝。
-
-## 二、程式碼層（確定要自建後）。命中第一項就停：
-1. 這個 repo 裡已經有（函式／元件／工具／既有模式）→ 直接用或擴充
-2. 標準函式庫做得到 → 用它
-3. 平台原生做得到（原生優於自訂、CSS 優於 JS、DB constraint 優於應用層檢查）
-4. 已安裝的套件做得到 → 用它；不得為了幾行程式碼新增依賴
-5. 以上皆非 → 能動的最小實作
-
-## 三、驗證
-來源優先順序：repo 現有程式碼／慣例 > 官方文件（版本對應）> changelog／issues > 社群討論。
-API 名稱、參數、版本行為一律不得憑記憶生成——查證或回報「查無此項」。禁止捏造、禁止用相近項目頂替。
-一律要查證的項目：第三方 API／SDK 用法、版本依賴、認證與金流、資料模型／migrations、任何尚未讀過的檔案。
-
-## 四、禁止自創外部形狀（硬性擋下）
-凡是要對接外部規格的內容——API 欄位名、檔案／資料格式、輸出或產物形狀、數量、尺寸與長度上限、協定或流程階段、平台慣例——動筆寫程式或做設計前，一律先從該規格的權威來源（官方文件、schema、RFC、公開標準）查證。查不到 → 停下來問使用者；自己命名一律禁止。
-禁止發明該外部規格沒有定義的欄位、層級或階段。用自己的詞去取代規格已定義的詞（改名、合併、重塑其欄位結構）是缺陷，不是簡化。
-使用者說「先照做」時，工作主體仍須從該領域既有的權威來源（官方文件、原始碼 repo、公開標準）蒸餾而來；只有貼合使用者需求的調整才是自創的。即使放行動工，交出自創結構作為主體內容一律禁止。
-引用的外部規格必須在旁註明來源。沒有來源的外部規格視為未驗證，不得交件。
-
-## 五、豁免（直接做，不必走上面流程）
-打字錯誤、樣式微調、修 bug、重構、使用者已經指定方案。
-
-## 六、回報
-採用現成方案 → 具名列出（package／repo／skill 名稱）。自建 → 用一句話說明為何現成方案都不適用。
+1. Before building a capability, look for an existing skill / plugin / MCP server / maintained open-source package (updated within 12 months, clear compatible licence, real adoption). Report ≤3 candidates with name, source, last update, licence, gap — then **ask before installing anything**.
+2. Code-level reuse order is ponytail's ladder (already loaded): exists in repo → stdlib → platform-native → installed dep → minimal code.
+3. Never generate API names, parameters, versions or behaviour from memory. Verify (repo code > official docs for the pinned version > changelog > community) or report "not found". No near-miss substitutes.
+4. Exempt: typos, style tweaks, bug fixes, refactors, and anything the user has already chosen.
+5. Report: name the package/skill you adopted, or one sentence on why nothing fit.
