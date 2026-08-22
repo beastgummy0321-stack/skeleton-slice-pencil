@@ -30,12 +30,13 @@ description: 做下一片——初始化之後的一切開發入口：換真線�
 | 判定 | 條件 | 路線 |
 |---|---|---|
 | A | 只動樣式／文案／間距 | 直接改 → lint → 完工回報。動到「讀的字」照 /skeleton 第 4 節第 6 點過 humanizer。不進看板 |
-| B | 動行為，schema 與模組進入點皆不動 | 快改：確認「哪個畫面＋期望行為」→ 改 → 四態抽查 → 回報。不進看板 |
+| B | Behaviour change; schema and module entry points untouched | Confirm expected behaviour → edit → any branch/loop/money path gets one runnable check → machine gate (workflow.md Gate) → four-state spot check **only if UI changed** → report. Not on board |
 | C | 換真線／動 schema／動進入點 | 開片（或認領既有 `[ ]` 行）→ 三站 |
-| 新畫面或新狀態 | 原型裡沒有的頁，或原型裡沒有的使用者可見狀態（modal／權限／新表單） | 先照 /skeleton 第 4 節同風格錨生成假資料版（含該節「原型天花板」）＋看板加行，再走 C |
+| New screen or state | Page or user-visible state absent from the prototype **and needing new data** (schema field or action; screen-contract.md scope). No new data → route B | 先照 /skeleton 第 4 節同風格錨生成假資料版（含該節「原型天花板」）＋看板加行，再走 C |
 | 大 | 願望涉及 >1 畫面或預估 >1 票 | 全切後打：先 /to-spec 出規格書 → /to-tickets 垂直切完全部票 → 使用者點頭 → 無交集的票同時派 Sonnet 實作（worktree 隔離）→ 立即引導使用者 grill 下一個功能區塊（workflow.md Tickets） |
 
 B 路線中途發現要動 schema → 當場升級 C，告知使用者。
+Record the route: first line of the A/B completion report and the C `slice-NN` commit message carry `route=<A|B|C>: <one-line reason>`.
 
 ## 3. 三站（C 路線）
 
@@ -69,8 +70,8 @@ UNKNOWN 收錄門檻（防規劃無限延長）：只收不可逆表命中、或
 ### ③ 換真線
 
 移除該片假資料源。前端 diff 必須為零（有 diff＝違約，停下回報）。Playwright 冒煙過。
-拔根測試（container-contract 第 6 點）：暫時移除本模組資料夾＋註冊行 → build 過、主畫面載入 → 還原。
-不過＝有東西綁死了，修到過才算完工。
+Pull-out test (container-contract §6), non-core modules only: remove the module folder + registration line → build passes, main screen loads → restore.
+Fail = hidden coupling; fix until green. Core module → Playwright smoke + main screen loads instead.
 使用者再玩一次 → 點頭。
 收工動作（一次做完）：BOARD.md 刪行｜commit `slice-NN done: <名>`｜
 刪本片過程檔（UNKNOWN 清單、草稿）｜問「接著做下一片＜名＞嗎？」
