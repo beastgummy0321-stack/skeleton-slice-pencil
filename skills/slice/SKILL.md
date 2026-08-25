@@ -30,12 +30,12 @@ description: 做下一片——初始化之後的一切開發入口：換真線�
 | 判定 | 條件 | 路線 |
 |---|---|---|
 | A | 只動樣式／文案／間距 | 直接改 → lint → 完工回報。動到「讀的字」照 /skeleton 第 4 節第 6 點過 humanizer。不進看板 |
-| B | Behaviour change; schema and module entry points untouched | Confirm expected behaviour → edit → any branch/loop/money path gets one runnable check → machine gate (workflow.md Gate) → four-state spot check **only if UI changed** → report. Not on board |
-| C | 換真線／動 schema／動進入點 | 開片（或認領既有 `[ ]` 行）→ 三站 |
+| B | Behaviour change; schema, module entry points, money and permission paths all untouched. **Default route.** | Confirm expected behaviour → edit → any branch/loop/money path gets one runnable check → machine gate (workflow.md Gate) → four-state spot check **only if UI changed** → report. Not on board |
+| C | 只有這四類（加換真線）：schema／migration、模組邊界、金流、權限／租戶隔離 | 開片（或認領既有 `[ ]` 行）→ 三站 |
 | New screen or state | Page or user-visible state absent from the prototype **and needing new data** (schema field or action; screen-contract.md scope). No new data → route B | 先照 /skeleton 第 4 節同風格錨生成假資料版（含該節「原型天花板」）＋看板加行，再走 C |
 | 大 | 願望涉及 >1 畫面或預估 >1 票 | 全切後打：先 /to-spec 出規格書 → /to-tickets 垂直切完全部票 → 使用者點頭 → 無交集的票同時派 Sonnet 實作（worktree 隔離）→ 立即引導使用者 grill 下一個功能區塊（workflow.md Tickets） |
 
-B 路線中途發現要動 schema → 當場升級 C，告知使用者。
+B 路線中途發現要動 schema、模組邊界、金流或權限 → 當場升級 C，告知使用者。
 Record the route: first line of the A/B completion report and the C `slice-NN` commit message carry `route=<A|B|C>: <one-line reason>`.
 
 ## 3. 三站（C 路線）
