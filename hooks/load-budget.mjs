@@ -1,5 +1,7 @@
-// PostToolUse hook: rule files (CLAUDE.md / AGENTS.md + files they @-import) must stay under LIMIT lines in total.
-import { readFileSync, existsSync, realpathSync } from 'node:fs';
+// PostToolUse hook: always-loaded rule files must stay under LIMIT lines in total.
+// Counted: CLAUDE.md / AGENTS.md, the files they @-import, and every .claude/rules/*.md
+// without `paths:` frontmatter — those load on every session too; path-scoped ones do not.
+import { readFileSync, existsSync, realpathSync, readdirSync } from 'node:fs';
 import { join, dirname, isAbsolute } from 'node:path';
 import { homedir } from 'node:os';
 
@@ -20,6 +22,26 @@ for (const name of ['CLAUDE.md', 'AGENTS.md']) {
 }
 const files = [];
 const addFile = (path) => { try { const real = realpathSync(path); if (!files.includes(real)) files.push(real); } catch {} };
+
+// A rules file with `paths:` frontmatter loads only for matching files, so it is not always-loaded.
+const isPathScoped = (path) => {
+  const head = readFileSync(path, 'utf8').split(/\r?\n/).slice(0, 20);
+  if (head[0]?.trim() !== '---') return false;
+  const end = head.indexOf('---', 1);
+  return head.slice(1, end < 0 ? head.length : end).some((line) => /^paths\s*:/.test(line));
+};
+const walkRules = (dir) => {
+  let entries;
+  try { entries = readdirSync(dir, { withFileTypes: true }); } catch { return; }
+  for (const entry of entries) {
+    const full = join(dir, entry.name);
+    if (entry.isDirectory()) walkRules(full);
+    else if (/\.md$/i.test(entry.name) && !isPathScoped(full)) addFile(full);
+  }
+};
+walkRules(join(homedir(), '.claude', 'rules'));
+walkRules(join(cwd, '.claude', 'rules'));
+
 for (const root of roots) {
   if (!existsSync(root)) continue;
   addFile(root);

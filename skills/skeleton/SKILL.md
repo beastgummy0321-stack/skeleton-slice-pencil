@@ -11,6 +11,8 @@ description: 初始化——每專案一次：訪談樹引導、地基、全站�
 ## 0. 溝通契約（對使用者的每一句話都適用）
 
 1. 一次一題；AskUserQuestion，2–4 選項＋每項一句白話＋標「(推薦)」。
+   使用者說「一輪多題」或專案 CLAUDE.md 註明節奏＝多題 → 改成一輪拋完 frontier、編號＋各附推薦，
+   並把節奏寫進專案 CLAUDE.md。技術使用者用一次一題會慢上數倍，且沒有換到任何東西。
 2. 每題附「不知道」出口：選它＝採推薦值＋記入「可反悔清單」，原型階段免費改。
 3. 題域白名單：給誰用／主要做什麼／要哪些功能／長什麼樣／資料給誰看／只有使用者能做的事（帳號、金鑰）。白名單外（技術棧、目錄、同步異步、錯誤處理）一律 agent 自答自記決策，禁問使用者。
 4. 問題四格路由（每題必過）：(1)事實題（code／文件查得到）→ agent 自查，禁問；
@@ -29,7 +31,7 @@ repo 有既有原始碼（package.json 或 src 非空）→ 走第 5 節「舊�
 ## 2. 新專案站一：訪談樹（把使用者當三歲小孩，手把手挖）
 
 引擎照 /grilling（設計樹＋frontier＋事實 agent 自查），互動形式被第 0 節覆蓋：
-一輪只問一題，禁整個 frontier 一次拋出、禁 Q1–Qn 文字牆。
+預設一輪只問一題，禁 Q1–Qn 文字牆；第 0 節第 1 點的多題節奏成立時，改為一輪拋完 frontier。
 
 樹的層次（依答案展開，每層一次一題）：
 
@@ -49,8 +51,12 @@ repo 有既有原始碼（package.json 或 src 非空）→ 走第 5 節「舊�
 
 ## 3. 新專案站二：地基（靜默建置）
 
-stack：Next.js+TS+Tailwind+shadcn/ui+tRPC+zod+Drizzle+SQLite 起步（後換 Postgres）
+stack **預設**：Next.js+TS+Tailwind+shadcn/ui+tRPC+zod+Drizzle+SQLite 起步（後換 Postgres）
 ＋dependency-cruiser＋husky pre-commit＋Playwright。
+
+**預設要先活過一題**：照第 2 節的功能地圖逐項自問「這個專案**第一天**真的需要它嗎？」，
+砍掉的記進可反悔清單、隨時可加回來。十一樣套件在知道程式要做什麼之前就定案，
+與 `reuse-first` 第 1 條和 ponytail 的梯子都相反；表單＋資料夾＋一顆按鈕的程式不需要 tRPC＋Drizzle。
 
 1. 逐項查證現行版本與維護狀態（context7／官方 changelog，禁憑記憶）。
    結果列表：名稱｜版本｜最後更新｜授權。

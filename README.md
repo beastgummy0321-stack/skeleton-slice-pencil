@@ -32,7 +32,7 @@ claude plugin install skeleton-slice-pencil@skeleton-slice-pencil
 | `skills/slice/` | 日常入口：分流（快改／三站切片：補問凍結→做後端→換真線＋拔根測試）、斷點續跑 |
 | `skills/container-contract/` | 集裝箱憲章觸發器 |
 | `skills/setup-workflow/` | 外部依賴安裝精靈 |
-| `rules/` | 規範本體（英文，共約 90 行）：workflow（模型分工 Fable→Opus→Sonnet→Haiku＋交件閘）、reuse-first、container-contract（模組邊界）、screen-contract（畫面契約） |
+| `rules/` | 規範本體（英文，共約 90 行）：workflow（分工＋交件閘＋退件上限）、reuse-first、container-contract（模組邊界）、screen-contract（畫面契約） |
 | `hooks/session-rules.mjs` | SessionStart 把 workflow／reuse-first 注入每個 session |
 | `hooks/load-budget.mjs` | PostToolUse 規範檔閘門：CLAUDE.md／AGENTS.md 及 @ 引用檔合計 500 行上限 |
 

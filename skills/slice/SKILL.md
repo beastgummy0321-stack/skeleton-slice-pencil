@@ -10,12 +10,15 @@ description: 做下一片——初始化之後的一切開發入口：換真線�
 ## 0. 溝通契約（對使用者的每一句話都適用）
 
 1. 一次一題；AskUserQuestion，2–4 選項＋每項一句白話＋標「(推薦)」。
+   使用者說「一輪多題」或專案 CLAUDE.md 註明節奏＝多題 → 一輪拋完 frontier，編號＋各附推薦。
 2. 禁術語；非用不可附一句比喻。時間講具體（「約一杯咖啡的時間」）。
 3. 每站開場報位置：「第 N 站，共 3 站」。
 4. 不可逆先講後果再問。出錯只說「發生什麼＋我怎麼修」，不貼 log。
 5. 本檔其餘部分是內部作業指令，照術語走，不外洩給使用者。
 6. 完工回報＝驗工單：逐步列「開哪個畫面、按什麼、看到什麼算過」；
-   檔案清單／endpoint／測試數字等術語交付清單不得作為回報主體。
+   檔案清單／endpoint 等術語交付清單不得作為回報主體。
+   但**必須附一行白話體積**：「這片加了 X 行程式、Y 行測試，這個模組現在共 Z 行」——
+   行數不是術語，藏起來就沒人看得見膨脹。
 
 ## 1. 開場
 
@@ -33,8 +36,11 @@ description: 做下一片——初始化之後的一切開發入口：換真線�
 | B | Behaviour change; schema, module entry points, money and permission paths all untouched. **Default route.** | Confirm expected behaviour → edit → any branch/loop/money path gets one runnable check → machine gate (workflow.md Gate) → four-state spot check **only if UI changed** → report. Not on board |
 | C | 只有這四類（加換真線）：schema／migration、模組邊界、金流、權限／租戶隔離 | 開片（或認領既有 `[ ]` 行）→ 三站 |
 | New screen or state | Page or user-visible state absent from the prototype **and needing new data** (schema field or action; screen-contract.md scope). No new data → route B | 先照 /skeleton 第 4 節同風格錨生成假資料版（含該節「原型天花板」）＋看板加行，再走 C |
+| **不做** | 真實使用還沒痛過；或手動做一次就解決；或它在替一個沒人跑過的系統猜門檻 | **當場講清楚為什麼，不進看板。** 使用者仍要做 → 先開一張「去產生真實使用」的票，那張票過了才回來重判 |
 | 大 | 願望涉及 >1 畫面或預估 >1 票 | 全切後打：先 /to-spec 出規格書 → /to-tickets 垂直切完全部票 → 使用者點頭 → 無交集的票同時派 Sonnet 實作（worktree 隔離）→ 立即引導使用者 grill 下一個功能區塊（workflow.md Tickets） |
 
+**判定順序：先問「不做」，再分 A／B／C。** 每個願望都被路由到某條建置路線，正是規模失控的成因；
+「不做」必須是一個真的會被選中的結果，不是禮貌用語。
 B 路線中途發現要動 schema、模組邊界、金流或權限 → 當場升級 C，告知使用者。
 Record the route: first line of the A/B completion report and the C `slice-NN` commit message carry `route=<A|B|C>: <one-line reason>`.
 
@@ -58,13 +64,18 @@ UNKNOWN 收錄門檻（防規劃無限延長）：只收不可逆表命中、或
 
 ### ② 做後端
 
+**後端天花板**（對稱於 /skeleton 第 4 節的原型天花板）：
+凍結 schema 沒有的欄位不寫；票沒要求的分支不寫；沒有 done-check 指名的測試不寫；
+「之後可能會用到」的抽象一律不寫。**done-checks 全綠即停，禁再打磨。**
+
 照凍結 schema 實作真 handler（派 Sonnet）。
 派實作 subagent 時附：凍結 schema 原文＋本 plugin 的 `rules/container-contract.md`（本 SKILL.md 上兩層的 rules 目錄） 原文（不摘要、不重寫）。
 金流／解析／複雜分支 → /tdd。
 交件閘＝機器組：type check＋depcruise＋受影響測試＋build 全綠才准進審查（workflow.md Gate）；對話台在驗收前跑一次，不得省略。
-派工後不等交件：告知使用者「後台開工了，約＜具體時間＞」，隨即回第 1 節開場節奏——
-帶使用者做下一片的①站補問、或念看板挑片；交件通知到了再回本片驗收。
-派工後讓使用者乾等進度一律禁止；下一片①站與本片②③站因此形成常態重疊。
+**同一張票撞紅兩次仍不綠 → 停止重試**，回報「卡在哪一條 done-check」，由使用者決定改票還是改做法。禁第三次自動重跑。
+派工後告知使用者現在在跑什麼，**不承諾時間**——沒有人能預測一個 agent 跑多久，開了就是空頭支票。
+接著問他要開始下一片的①站補問、還是等這片。**重疊是選項，不是義務**：
+實測強制重疊會讓多個 agent 卡在等不會來的通知，反而要主對話台自己接手收尾。
 關卡：機器組全綠＋一輪 Sonnet 獨立審查（只對驗收清單與 container-contract；風格意見記備註、不退件；最多複審一次，爭議由主對話裁決）。
 
 ### ③ 換真線
@@ -73,6 +84,10 @@ UNKNOWN 收錄門檻（防規劃無限延長）：只收不可逆表命中、或
 Pull-out test (container-contract §6), non-core modules only: remove the module folder + registration line → build passes, main screen loads → restore.
 Fail = hidden coupling; fix until green. Core module → Playwright smoke + main screen loads instead.
 使用者再玩一次 → 點頭。
+收工前問一題：**「這片你打算什麼時候真的拿它做一次事？」**
+答「之後再說」→ 下一片自動判定為 route 不做，直到這片被真的用過。
+點畫面點過不算真實使用——27 份 ADR、39,000 行、全部點過、沒有一片被用過，就是這樣來的。
+
 收工動作（一次做完）：BOARD.md 刪行｜commit `slice-NN done: <名>`｜
 刪本片過程檔（UNKNOWN 清單、草稿）｜問「接著做下一片＜名＞嗎？」
 
