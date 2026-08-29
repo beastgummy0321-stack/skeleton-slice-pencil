@@ -37,7 +37,7 @@ description: 做下一片——初始化之後的一切開發入口：換真線�
 | C | 只有這四類（加換真線）：schema／migration、模組邊界、金流、權限／租戶隔離 | 開片（或認領既有 `[ ]` 行）→ 三站 |
 | New screen or state | Page or user-visible state absent from the prototype **and needing new data** (schema field or action; screen-contract.md scope). No new data → route B | 先照 /skeleton 第 4 節同風格錨生成假資料版（含該節「原型天花板」）＋看板加行，再走 C |
 | **不做** | 真實使用還沒痛過；或手動做一次就解決；或它在替一個沒人跑過的系統猜門檻 | **當場講清楚為什麼，不進看板。** 使用者仍要做 → 先開一張「去產生真實使用」的票，那張票過了才回來重判 |
-| 大 | 願望涉及 >1 畫面或預估 >1 票 | 全切後打：先過 workflow.md「Premise check」一題 → /to-spec 出規格書 → **Plan review**（workflow.md：沒看過對話的 Opus 審規格書，產出是給使用者看的備註，不是否決）→ /to-tickets 垂直切完全部票 → 使用者點頭 → 無交集的票同時派 Sonnet 實作（worktree 隔離）→ 立即引導使用者 grill 下一個功能區塊（workflow.md Tickets） |
+| 大 | 願望涉及 >1 畫面或預估 >1 票 | 全切後打：先過 workflow.md「Premise check」一題 → /to-spec 出規格書 → **Plan review**（workflow.md：沒看過對話的 Opus 審規格書，產出是給使用者看的備註，不是否決）→ /to-tickets 垂直切完全部票 → 使用者點頭 → 照 workflow.md Tickets **循序**派 Sonnet 實作（平行只在兩票無共用檔且各超過半天時）→ 使用者可選 grill 下一個功能區塊或等這片，重疊是選項不是義務 |
 
 **判定順序：先問「不做」，再分 A／B／C。** 每個願望都被路由到某條建置路線，正是規模失控的成因；
 「不做」必須是一個真的會被選中的結果，不是禮貌用語。

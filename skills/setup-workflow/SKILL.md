@@ -12,7 +12,7 @@ disable-model-invocation: true
 
 1. `node --version`——本 plugin 的 hooks 依賴 node；查無 → 規範注入與規範檔閘門失效，skill 本體仍可用
 2. `claude plugin list` 含 `ponytail`、`i-have-adhd`、`mattpocock-skills` 與否
-4. Frontend Pack（有前端才需要）：`claude plugin list` 含 `ui-ux-pro-max`、`taste-skill`、`impeccable` 與否；
+3. Frontend Pack（有前端才需要）：`claude plugin list` 含 `ui-ux-pro-max`、`taste-skill`、`impeccable` 與否；
    `~/.claude/skills/humanizer-zh-tw/SKILL.md` 存在與否。查無 → /skeleton 第 4 節「缺件降級」條款生效
 
 ## 二、安裝（列清單，使用者點頭才執行；未點頭不得裝任何東西）
@@ -55,7 +55,7 @@ git clone --depth 1 https://github.com/kevintsai1202/Humanizer-zh-TW ~/.claude/s
 
 1. `claude plugin list` 逐項確認出現。裝了 Frontend Pack 的機器另確認 `~/.claude/skills/humanizer-zh-tw/SKILL.md` 存在（它不是 plugin，不會出現在 plugin list）。
 2. 提醒使用者重開 session 讓 hooks 生效。
-3. 重開後開場廣播出現「skeleton-slice 全域規範」字樣＝注入成功；沒出現 → 查 node 是否在 PATH。
+3. 重開後開場橫幅出現「skeleton-slice rules (injected every session)」字樣＝注入成功；沒出現 → 查 node 是否在 PATH。
 
 ## 四、衝突排除
 

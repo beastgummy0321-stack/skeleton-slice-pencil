@@ -37,8 +37,7 @@ Dispatch prompt = ticket path + `container-contract.md` verbatim. Nothing else.
 
 ## Gate and review
 
-1. Machine gate first: typecheck + depcruise + build (whichever the project actually has) + **only the test files the change affects** — not the whole suite. Red = not delivered; return to implementer, no review.
-   Frontend behaviour change: typecheck + build + the project's one end-to-end smoke. A project without that smoke gets it as its next ticket.
+1. Machine gate first: typecheck + depcruise + build (whichever the project actually has) + **only the test files the change affects** — not the whole suite — + **the project's one end-to-end smoke, on every B/C ticket, backend tickets included**: start the app, walk the one path. Integration bugs (the server will not boot, a screen shows `[object Object]`, a job freezes every tenant) surface only there; a gate that skips it finds them all at once after the last ticket lands. A project without that smoke, or whose smoke cannot run from one command, gets it as its next ticket. Red = not delivered; return to implementer, no review.
    **Two red rounds on the same ticket and the loop stops**: report which done-check is failing and let the user decide whether the ticket or the approach changes. No third automatic retry.
 2. Routes A/B: machine gate green → done. **A/B is the default.** A behaviour change is route B unless it lands in the route C list below.
 3. Route C is exactly four things — schema/migration, module boundary, money flow, permission/tenant isolation. Nothing else earns a ticket plus an independent review; copy changes and ordinary behaviour fixes do not.

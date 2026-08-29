@@ -1,7 +1,7 @@
 # skeleton-slice-pencil
 
-**這是 skeleton-slice 的 Pencil 版**（v3.3.0，分支自原版 v3.1.0 / c51e38d）。
-原版的規範一條沒改、一條沒少，另外加上 pen.dev（Pencil）設計檔的接線邊界與腳本。
+**這是 skeleton-slice 的 Pencil 版**（v4.3.0，分支自原版 v3.1.0 / c51e38d）。
+4.0.0 起規範自行演進、不再與原版同步；另外加上 pen.dev（Pencil）設計檔的接線邊界與腳本。
 與原版可並存，擇一啟用。不用 Pencil 的專案裝原版就好，本版對你沒有好處。
 
 可攜的 Claude Code 開發工作流 plugin。一次安裝，整套帶走：
