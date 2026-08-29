@@ -11,6 +11,25 @@ reviews; Opus takes architecture and hard root cause; Haiku takes long logs.
 - Escalate a tier only after two rounds with no progress on the same problem — never because a task "feels important".
 - Main chat writes code only on /slice routes A/B (style/copy, or a behaviour change that touches no schema, no module entry point, and no money or permission path).
 
+## Premise check (before the first interview round)
+
+Grilling converges on the plan it is given; nothing in it asks whether that plan should exist. So the first question of any interview that leads to building — /skeleton station one, /slice station ① of a route C slice, the 大 route before /to-spec, a bare /grill-with-docs on a build idea — is the premise, asked in the user's communication contract (one AskUserQuestion, 2–4 options, one plain line each, one marked recommended):
+
+- header: the outcome, restated in one sentence the user would sign;
+- option: the user's plan as stated;
+- options: up to two alternatives that reach the **same outcome** with less building — by hand, an existing tool, a narrower cut — each naming in one line what it gives up;
+- option, when one exists: the cheapest experiment that would show the premise is wrong.
+
+Facts the options need (what the code does, what current products do) are the agent's job, never the user's. The recommendation may be the user's own plan. No genuinely smaller alternative found → say so in one line and start the interview; never invent one to have something to say. The user's pick is what gets grilled; the options not picked go into the ADR as considered-and-rejected, so they are not re-proposed next month. Not for route A/B, not for a ticket inside an already-approved list.
+
+## Plan review (fresh eyes before the user approves)
+
+A /to-spec output, and the ticket list that follows it, get one review by an agent that has not seen the conversation — Opus, fresh context, given only the spec (or list), `CONTEXT.md` and `BOARD.md`. Brief, verbatim:
+
+> Make the strongest case that this is the wrong thing to build, or the wrong shape. Give the simplest alternative that yields the same user outcome, including not building it. Quote the ADR or user statement each claim rests on. Ten lines maximum.
+
+Its output is shown to the user as a note before they approve — never a veto, never a re-review, one round only. The planner does not review its own plan, for the same reason the implementer does not review its own diff: thirty rounds of sharpening a plan leave no room to say the plan is wrong.
+
 ## Spec before dispatch (route C only)
 
 Ticket = 3 fields: **what** (contract with a literal JSON example), **how we know it's done** (checks that are runnable or would fail a test, **each spelling out the gate command verbatim, including which test files it runs**), **shared files touched**. `N/A + one reason` counts as filled.
