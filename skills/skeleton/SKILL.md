@@ -113,7 +113,7 @@ stack **預設**：Next.js+TS+Tailwind+shadcn/ui+tRPC+zod+Drizzle+SQLite 起步�
    該檔第四節的 dump 與 `bin/pen-verify.mjs` 不綠，不得宣告設計完成、不得開票。
 3. 畫面契約：每畫面產 `src/schemas/<畫面名>.ts`（zod schema＋action 簽名；註解＝資料哪裡來）。
    外部平台欄位用 /research 查官方文件填入＋註出處；查無 → 記 UNKNOWN，禁自創。
-4. 平行生成：每畫面一個 subagent；派工 prompt 附風格錨 token＋共用 mocks 入口
+4. 逐頁生成：每畫面一個 subagent，**一頁落盤再派下一頁**（同 workflow.md「預設循序」；實測平行的協調等待比生成本身更花時間）；派工 prompt 附風格錨 token＋共用 mocks 入口
    ＋本 plugin 的 `rules/container-contract.md`（本 SKILL.md 上兩層的 rules 目錄） 原文（不摘要、不重寫）。
    禁自選色、禁自加依賴。打磨只准在第 2 點的風格錨那一頁做，其餘頁只生成不打磨。
 5. 假資料活在 `src/mocks/` 單一入口；四態（正常／空／失敗／進行中）做成可切換開關；

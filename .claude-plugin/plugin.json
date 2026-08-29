@@ -1,6 +1,6 @@
 {
   "name": "skeleton-slice-pencil",
-  "version": "4.3.0",
+  "version": "4.4.0",
   "description": "可攜開發工作流（Pencil 版）：/skeleton 初始化、/slice 換真線、集裝箱憲章、模型分工（Fable→Opus→Sonnet→Haiku）、reuse-first；另含 pen.dev（Pencil）設計檔接線規範與 preflight／落盤驗證腳本。",
   "author": {
     "name": "beastgummy0321-stack"

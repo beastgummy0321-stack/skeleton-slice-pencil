@@ -42,7 +42,8 @@ Dispatch prompt = ticket path + `container-contract.md` verbatim. Nothing else.
 2. Routes A/B: machine gate green → done. **A/B is the default.** A behaviour change is route B unless it lands in the route C list below.
 3. Route C is exactly four things — schema/migration, module boundary, money flow, permission/tenant isolation. Nothing else earns a ticket plus an independent review; copy changes and ordinary behaviour fixes do not.
    Route C gate: one independent Sonnet review of the diff against the ticket's done-checks.
-   **A reject is allowed only for: a done-check fails, machine gate red, or a container-contract violation**, and it must **quote the done-check it fails, word for word**. If you cannot quote one, it is a note and the ticket ships. Style, taste, naming, "could be simpler" = a note, never a reject.
+   **A reject is allowed only for: a done-check fails, machine gate red, a container-contract violation, or code and tests beyond what the done-checks require** (the ceiling — a branch, a field, an abstraction, a test no done-check names), and it must **quote the done-check it fails or exceeds, word for word**. If you cannot quote one, it is a note and the ticket ships. Style, taste, naming, "could be simpler" = a note, never a reject.
+   A reject is appended to the ticket file under `## Rejected` — the quoted done-check plus the evidence — before re-dispatch; the dispatch prompt itself does not change, so the record is the only way the next round learns what failed.
 4. At most one re-review. Still disputed → Fable decides.
 5. Trust machine output and `git diff`, not the worker's prose.
 
@@ -57,7 +58,7 @@ Tests are code someone maintains; more of them is not more safety.
 
 ## Tickets and parallel work
 
-- Work bigger than one ticket: /to-spec → /to-tickets, slice vertically (schema → API → screen → test), user approves the list, then dispatch.
+- Work bigger than one ticket: /to-spec → /to-tickets, slice vertically (schema → API → screen → test), user approves the list, then dispatch. /to-tickets writes Matt's ticket shape (what to build, blocked by, acceptance criteria); before dispatch each ticket is reshaped into the 3-field ticket above, gate command verbatim included. A ticket missing a field is not dispatched.
 - **Work sequentially. Parallel worktrees are the exception**, earned only when two tickets touch no file in common *and* each is over half a day. Measured: parallel coordination is the largest time sink in practice — agents stall waiting for notifications that never arrive.
 - Merge one line at a time; run the **full** test suite on main after each merge — that is the only place the whole suite runs.
 - After dispatching, say what is running and **do not promise a time** — nobody can predict an agent run. The user may start the next slice or wait; overlapping is an option, never an obligation.
