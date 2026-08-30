@@ -15,7 +15,7 @@ description: 做下一片——初始化之後的一切開發入口：換真線�
 3. 每站開場報位置：「第 N 站，共 3 站」。
 4. 不可逆先講後果再問。出錯只說「發生什麼＋我怎麼修」，不貼 log。
 5. 本檔其餘部分是內部作業指令，照術語走，不外洩給使用者。
-6. 完工回報＝驗工單：逐步列「開哪個畫面、按什麼、看到什麼算過」；
+6. 完工回報＝驗工單：逐步列「開哪個畫面、按什麼、看到什麼算過」，開畫面的步驟附小幫手走過的 ✅ 與截圖路徑；
    檔案清單／endpoint 等術語交付清單不得作為回報主體。
    但**必須附一行白話體積**：「這片加了 X 行程式、Y 行測試，這個模組現在共 Z 行」——
    行數不是術語，藏起來就沒人看得見膨脹。
@@ -32,8 +32,8 @@ description: 做下一片——初始化之後的一切開發入口：換真線�
 
 | 判定 | 條件 | 路線 |
 |---|---|---|
-| A | 只動樣式／文案／間距 | 直接改 → lint → 完工回報。動到「讀的字」照 /skeleton 第 4 節第 6 點過 humanizer。不進看板 |
-| B | Behaviour change; schema, module entry points, money and permission paths all untouched. **Default route.** | Confirm expected behaviour → edit → any branch/loop/money path gets one runnable check → machine gate (workflow.md Gate) → four-state spot check **only if UI changed** → report. Not on board |
+| A | 只動樣式／文案／間距 | 直接改 → lint → 驗工單先走一遍（workflow.md Gate）→ 完工回報。動到「讀的字」照 /skeleton 第 4 節第 6 點過 humanizer。不進看板 |
+| B | Behaviour change; schema, module entry points, money and permission paths all untouched. **Default route.** | Confirm expected behaviour → edit → any branch/loop/money path gets one runnable check → machine gate (workflow.md Gate) → four-state spot check **only if UI changed** → acceptance-step walk (workflow.md Gate) → report. Not on board |
 | C | 只有這四類（加換真線）：schema／migration、模組邊界、金流、權限／租戶隔離 | 開片（或認領既有 `[ ]` 行）→ 三站 |
 | New screen or state | Page or user-visible state absent from the prototype **and needing new data** (schema field or action; screen-contract.md scope). No new data → route B | 先照 /skeleton 第 4 節同風格錨生成假資料版（含該節「原型天花板」）＋看板加行，再走 C |
 | **不做** | 真實使用還沒痛過；或手動做一次就解決；或它在替一個沒人跑過的系統猜門檻 | **當場講清楚為什麼，不進看板。** 使用者仍要做 → 先開一張「去產生真實使用」的票，那張票過了才回來重判 |
@@ -86,7 +86,7 @@ UNKNOWN 收錄門檻（防規劃無限延長）：只收不可逆表命中、或
 移除該片假資料源。前端 diff 必須為零（有 diff＝違約，停下回報）。Playwright 冒煙過。
 Pull-out test (container-contract §6), non-core modules only: remove the module folder + registration line → build passes, main screen loads → restore.
 Fail = hidden coupling; fix until green. Core module → Playwright smoke + main screen loads instead.
-使用者再玩一次 → 點頭。
+驗工單先由小幫手走一遍（workflow.md Gate）→ 使用者再玩一次 → 點頭。
 收工前問一題：**「這片你打算什麼時候真的拿它做一次事？」**
 答「之後再說」→ 下一片自動判定為 route 不做，直到這片被真的用過。
 點畫面點過不算真實使用——27 份 ADR、39,000 行、全部點過、沒有一片被用過，就是這樣來的。

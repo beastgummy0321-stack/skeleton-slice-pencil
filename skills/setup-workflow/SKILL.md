@@ -1,6 +1,6 @@
 ---
 name: setup-workflow
-description: 安裝本工作流的外部依賴 plugin（ponytail、i-have-adhd、mattpocock-skills、前端四件組 Frontend Pack）並檢查環境（node）。換新機器或給他人安裝本 plugin 後跑一次。觸發：setup-workflow、安裝工作流依賴、環境檢查。
+description: 安裝本工作流的外部依賴 plugin（ponytail、i-have-adhd、mattpocock-skills、前端四件組 Frontend Pack）與 playwright-cli，並檢查環境（node）。換新機器或給他人安裝本 plugin 後跑一次。觸發：setup-workflow、安裝工作流依賴、環境檢查。
 disable-model-invocation: true
 ---
 
@@ -14,6 +14,8 @@ disable-model-invocation: true
 2. `claude plugin list` 含 `ponytail`、`i-have-adhd`、`mattpocock-skills` 與否
 3. Frontend Pack（有前端才需要）：`claude plugin list` 含 `ui-ux-pro-max`、`taste-skill`、`impeccable` 與否；
    `~/.claude/skills/humanizer-zh-tw/SKILL.md` 存在與否。查無 → /skeleton 第 4 節「缺件降級」條款生效
+4. `playwright-cli --version`——workflow.md Gate 的「驗工單先走一遍」靠它；查無 → 該步跳過，驗工單全部回到使用者手上。
+   `~/.claude/settings.json` 的 `permissions.allow` 含 `Bash(playwright-cli:*)` 與否；查無 → 背景小幫手撞權限提問卡死
 
 ## 二、安裝（列清單，使用者點頭才執行；未點頭不得裝任何東西）
 
@@ -27,7 +29,11 @@ claude plugin marketplace add ayghri/i-have-adhd
 claude plugin install i-have-adhd@i-have-adhd
 
 claude plugin install mattpocock-skills@claude-plugins-official
+
+npm install -g @playwright/cli@latest
 ```
+
+`playwright-cli` 裝完，在 `~/.claude/settings.json` 的 `permissions.allow` 加一行 `"Bash(playwright-cli:*)"`。
 
 ### Frontend Pack（純後端專案不裝）
 
