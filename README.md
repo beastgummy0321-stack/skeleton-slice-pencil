@@ -1,6 +1,6 @@
 # skeleton-slice-pencil
 
-**這是 skeleton-slice 的 Pencil 版**（v4.5.0，分支自原版 v3.1.0 / c51e38d）。
+**這是 skeleton-slice 的 Pencil 版**（v5.0.0，分支自原版 v3.1.0 / c51e38d）。
 4.0.0 起規範自行演進、不再與原版同步；另外加上 pen.dev（Pencil）設計檔的接線邊界與腳本。
 與原版可並存，擇一啟用。不用 Pencil 的專案裝原版就好，本版對你沒有好處。
 
@@ -57,7 +57,8 @@ claude plugin install skeleton-slice-pencil@skeleton-slice-pencil
 
 ```
 /skeleton（每專案一次）
-  訪談樹：給誰用→最常做什麼→功能逐項要不要（附「不知道」出口）→挑風格圖
+  訪談樹：給誰用→最常做什麼→功能逐項要不要（附「不知道」出口）
+  Gate A：憲法（≤20 行）＋模組圖（含判讀歸屬）＋借鑑清單＋stack 按最終商業形態定 → 使用者簽字
   地基：stack＋模組軌道＋depcruise 證紅＋冒煙證紅（靜默，安裝先點頭）
   原型：風格錨 1 頁挑 1 版 → 每頁一個 subagent 平行生成 → 全站可點、四態可切
   交付：BOARD.md 寫滿 [ ]，逐片等 /slice 換真線。原型階段加刪功能免費。

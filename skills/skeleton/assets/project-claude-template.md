@@ -8,6 +8,8 @@
 
 ## 地標
 
+- 憲法：`CONSTITUTION.md`（≤20 行）；文件樹 `docs/`（CONTEXT／adr／contracts／issues）。
+  派工只帶：憲法摘要＋單票＋票內指名的契約。
 - 技術棧：{{stack 一行}}
 - 資料形狀（合約）：`src/schemas/`。schema 即前後端唯一合約。
 - 模組：`src/modules/<名>/`，對外唯一進入點 `index.ts`。
@@ -22,7 +24,8 @@
 - lint／型別／測試紅字不得繞過、不得 skip。
 - C 路線的實作者不得自審；審查由獨立 agent 執行。A／B 路線機器閘門綠即完成，不另派審查。
 - `HANDOFF-*.md` 讀完即轉成看板行或票，同一 session 內刪除；「現在做到哪」只活在 `BOARD.md`，寫第二份必漂移。
-- 切片過程檔（UNKNOWN 清單、草稿）收工即刪。
+- 切片過程檔（`docs/issues/<slug>/`、UNKNOWN 清單、草稿）收工即刪。
+- 完工只有三種出口：交付、開票、提修憲。另寫一份說明文件不是出口。
 
 ## 對使用者說話
 

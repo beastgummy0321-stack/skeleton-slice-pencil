@@ -50,16 +50,18 @@ repo 有既有原始碼（package.json 或 src 非空）→ 走第 5 節「舊�
 使用者看得到的行為。線外細節（可逆、單模組內部、換個做法只改一處）禁問禁凍，
 帶進實作由 agent 自決＋標 `ponytail:` 註解或記可反悔清單。
 線外議題討論兩輪即記可反悔、開工，禁第三輪。
-樹走空 → 一頁白話摘要（功能清單＋每功能一句）→ 使用者點頭＝功能地圖定案。
+樹走空 → **Gate A**（workflow.md）：`CONSTITUTION.md` 草案（≤20 行：目標／非目標／給誰用／最終商業形態）
+＋模組圖（資料與判讀歸屬）＋借鑑清單（reuse-first §2）＋一頁白話功能摘要 → 使用者點頭＝架構定案。
+stack 也在這裡按**最終商業形態**選定（預設候選見站二）；憲法與 `docs/` 樹（CONTEXT／adr／contracts／issues）同時落盤。
 
 ## 3. 新專案站二：地基（靜默建置）
 
 stack **預設**：Next.js+TS+Tailwind+shadcn/ui+tRPC+zod+Drizzle+SQLite 起步（後換 Postgres）
 ＋dependency-cruiser＋husky pre-commit＋Playwright。
 
-**預設要先活過一題**：照第 2 節的功能地圖逐項自問「這個專案**第一天**真的需要它嗎？」，
-砍掉的記進可反悔清單、隨時可加回來。十一樣套件在知道程式要做什麼之前就定案，
-與 `reuse-first` 第 1 條和 ponytail 的梯子都相反；表單＋資料夾＋一顆按鈕的程式不需要 tRPC＋Drizzle。
+stack 已在 Gate A 按最終商業形態定案（上列僅是預設候選）；本站不重問、不砍項，只查證與安裝。
+判準是「最終形態需要嗎」，不是「第一天需要嗎」——為省事選輕量技術、落地後推倒重建，
+比一開始就上對的架構更貴。表單＋一顆按鈕的小工具在 Gate A 就該選小 stack，那是憲法決定，不是站二的事。
 
 1. 逐項查證現行版本與維護狀態（context7／官方 changelog，禁憑記憶）。
    結果列表：名稱｜版本｜最後更新｜授權。
@@ -138,7 +140,7 @@ ui-ux-pro-max 與 taste-skill 兩者皆缺 → 對話台 Claude 自出 3 版候�
 
 - 改動任何既有原始碼與結構一律禁止。違反＝本 skill 失敗。
 - 現有產品即原型，不再生成。反向蒸餾：每既有畫面從 code 反推畫面契約落 `src/schemas/`，
-  標注「現況蒸餾，未凍結」——是描述不是規範。
+  標注「現況蒸餾，未凍結」——是描述不是規範。同樣補 `CONSTITUTION.md`（≤20 行，現況蒸餾）與 `docs/` 樹。
 - depcruise 掛基線模式：既有違規記入 baseline 檔，只擋新增的違規。
 - 加：`src/schemas/`、BOARD.md、專案 CLAUDE.md、pre-commit（僅 lint 新改檔）。
 - 盤點：派唯讀 subagent 掃模組結構（Grep 定位，禁整檔讀）→
@@ -149,8 +151,11 @@ ui-ux-pro-max 與 taste-skill 兩者皆缺 → 對話台 Claude 自出 3 版候�
 - 盤點時查驗依賴清單檔（requirements.txt／package.json＋lock）存在且可重建環境；
   缺失即從實際 import 反推生成入庫——環境被重灌時無清單＝全站癱瘓，不得跳過。
 
-## 6. 常駐三件套
+## 6. 常駐四件套
 
+0. `CONSTITUTION.md`（repo 根，≤20 行，Gate A 產物）＋ `docs/` 樹
+   （CONTEXT.md／adr／contracts／issues，issues 進 .gitignore）。
+   BOARD.md 第一行指向憲法。文件鏈規則見 preamble：≤2 跳鏈不到＝退役。
 1. `BOARD.md`（repo 根）：
 
    ```
@@ -166,6 +171,6 @@ ui-ux-pro-max 與 taste-skill 兩者皆缺 → 對話台 Claude 自出 3 版候�
 
 ## 7. 收工檢核（全過才報完工）
 
-原型可點且四態可切｜depcruise 證過紅｜冒煙證過紅｜BOARD.md 寫滿｜專案 CLAUDE.md 在｜
+原型可點且四態可切｜depcruise 證過紅｜冒煙證過紅｜CONSTITUTION.md 與 docs/ 樹在｜BOARD.md 寫滿｜專案 CLAUDE.md 在｜
 安裝清單經點頭｜可反悔清單＋UNKNOWN 清單已交付。
 回報格式：三件套路徑＋證紅紀錄＋跳過了什麼。

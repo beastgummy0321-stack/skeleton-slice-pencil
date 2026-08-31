@@ -36,11 +36,10 @@ description: 做下一片——初始化之後的一切開發入口：換真線�
 | B | Behaviour change; schema, module entry points, money and permission paths all untouched. **Default route.** | Confirm expected behaviour → edit → any branch/loop/money path gets one runnable check → machine gate (workflow.md Gate) → four-state spot check **only if UI changed** → acceptance-step walk (workflow.md Gate) → report. Not on board |
 | C | 只有這四類（加換真線）：schema／migration、模組邊界、金流、權限／租戶隔離 | 開片（或認領既有 `[ ]` 行）→ 三站 |
 | New screen or state | Page or user-visible state absent from the prototype **and needing new data** (schema field or action; screen-contract.md scope). No new data → route B | 先照 /skeleton 第 4 節同風格錨生成假資料版（含該節「原型天花板」）＋看板加行，再走 C |
-| **不做** | 真實使用還沒痛過；或手動做一次就解決；或它在替一個沒人跑過的系統猜門檻 | **當場講清楚為什麼，不進看板。** 使用者仍要做 → 先開一張「去產生真實使用」的票，那張票過了才回來重判 |
-| 大 | 願望涉及 >1 畫面或預估 >1 票 | 全切後打：先過 workflow.md「Premise check」一題 → /to-spec 出規格書 → **Plan review**（workflow.md：沒看過對話的 Opus 審規格書，產出是給使用者看的備註，不是否決）→ /to-tickets 垂直切完全部票 → 使用者點頭 → 照 workflow.md Tickets **循序**派 Sonnet 實作（平行只在兩票無共用檔且各超過半天時）→ 使用者可選 grill 下一個功能區塊或等這片，重疊是選項不是義務 |
+| 大 | 願望涉及 >1 畫面或預估 >1 票 | 全切後打：願望超出現行憲法或模組圖 → 先回 **Gate A**（workflow.md）修憲；否則先過 workflow.md「Premise check」一題 → /to-spec 出規格書 → **Plan review**（workflow.md：沒看過對話的 Opus 審規格書，產出是給使用者看的備註，不是否決）→ /to-tickets 垂直切完全部票 → 使用者點頭 → 照 workflow.md Tickets **循序**派 Sonnet 實作（平行只在兩票無共用檔且各超過半天時）→ 使用者可選 grill 下一個功能區塊或等這片，重疊是選項不是義務 |
 
-**判定順序：先問「不做」，再分 A／B／C。** 每個願望都被路由到某條建置路線，正是規模失控的成因；
-「不做」必須是一個真的會被選中的結果，不是禮貌用語。
+**判定順序：A → B → C。** 砍願望的關卡在 workflow.md 的 Premise check 與 Gate A，不在分流表——
+分流表只決定怎麼做，不決定該不該做。
 B 路線中途發現要動 schema、模組邊界、金流或權限 → 當場升級 C，告知使用者。
 Record the route: first line of the A/B completion report and the C `slice-NN` commit message carry `route=<A|B|C>: <one-line reason>`.
 
@@ -86,11 +85,10 @@ Pull-out test (container-contract §6), non-core modules only: remove the module
 Fail = hidden coupling; fix until green. Core module → Playwright smoke + main screen loads instead.
 驗工單先由小幫手走一遍（workflow.md Gate）→ 使用者再玩一次 → 點頭。
 收工前問一題：**「這片你打算什麼時候真的拿它做一次事？」**
-答「之後再說」→ 下一片自動判定為 route 不做，直到這片被真的用過。
-點畫面點過不算真實使用——27 份 ADR、39,000 行、全部點過、沒有一片被用過，就是這樣來的。
+答案只作情報記錄（提醒使用者去用），不觸發任何封鎖或路由。
 
 收工動作（一次做完）：BOARD.md 刪行｜commit `slice-NN done: <名>`｜
-刪本片過程檔（UNKNOWN 清單、草稿）｜問「接著做下一片＜名＞嗎？」
+刪本片票與過程檔（`docs/issues/<slug>/`、UNKNOWN 清單、草稿）｜問「接著做下一片＜名＞嗎？」
 
 ### C-舊（切片碰到違規老 code 時的附加規則）
 

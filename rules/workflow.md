@@ -11,6 +11,16 @@ reviews; Opus takes architecture and hard root cause; Haiku takes long logs.
 - Escalate a tier only after two rounds with no progress on the same problem — never because a task "feels important".
 - Main chat writes code only on /slice routes A/B (style/copy, or a behaviour change that touches no schema, no module entry point, and no money or permission path).
 
+## Gate A (architecture consensus)
+
+/skeleton, and every 大-route wish the current constitution or module map does not cover, passes Gate A before any spec, ticket or code:
+
+1. Orientation, read-only: what the repo already has, plus a market sweep (reuse-first §2) — which mature products do this job, what to copy, what to avoid.
+2. Grilling produces the architecture set: `CONSTITUTION.md` (≤20 lines — goals, non-goals, who it serves, its final commercial form), the module map with data and decision ownership (which component owns each judgment call), the stack — chosen for that final form, not for day one — and the considered-and-rejected list.
+3. The user signs the set. Unsigned = no spec, no tickets, no code. The first ticket after signing is a tracer slice through the signed architecture; a throwaway architecture "to validate" is never it.
+
+The agent argues with evidence before the signature and executes after it; it hard-blocks only on technical impossibility, with evidence and an alternative. Changing anything signed is a constitution amendment: back through Gate A, then recompute the affected spec and tickets — never drift it from inside a ticket.
+
 ## Premise check (before the first interview round)
 
 Grilling converges on the plan it is given; nothing in it asks whether that plan should exist. So the first question of any interview that leads to building — /skeleton station one, /slice station ① of a route C slice, the 大 route before /to-spec, a bare /grill-with-docs on a build idea — is the premise, asked in the user's communication contract (one AskUserQuestion, 2–4 options, one plain line each, one marked recommended):
