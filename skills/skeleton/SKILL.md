@@ -33,11 +33,8 @@ repo 有既有原始碼（package.json 或 src 非空）→ 走第 5 節「舊�
 引擎照 /grilling（設計樹＋frontier＋事實 agent 自查），互動形式被第 0 節覆蓋：
 預設一輪只問一題，禁 Q1–Qn 文字牆；第 0 節第 1 點的多題節奏成立時，改為一輪拋完 frontier。
 
-開樹前先過一題：workflow.md「Premise check」。題目＝一句話重述他要的結果；選項＝他說的做法、
-≤2 個蓋得更少但結果相同的走法（用手做／現成工具／砍窄，各附一句放棄了什麼）、
-必要時一個最便宜的驗證實驗；照第 0 節格式（AskUserQuestion、每項一句白話、標推薦）。
+開樹前先過一題：workflow.md「Premise check」，格式與選項照那一節，這裡不重述（重述會漂移）。
 他挑定的那個才是樹的根；沒挑的記進 ADR「當時排除了什麼」。
-找不到真的更小的走法 → 一句話說明，直接開樹，禁硬湊。
 
 樹的層次（依答案展開，每層一次一題）：
 
@@ -108,9 +105,6 @@ stack **預設**：Next.js+TS+Tailwind+shadcn/ui+tRPC+zod+Drizzle+SQLite 起步�
    其餘落可反悔清單，原型階段不修。
    token 定案後禁止重新發散風格：新畫面一律沿用；使用者明確說「整套重做」才得重問模式。
    此頁兼 tracer：畫面→tRPC→DB 一張表打通（原型天花板的唯一例外）。
-   **Pencil 路線（可選）**：改用 pen.dev 畫風格錨與各畫面，跳過本節第 1 點模式表與 audit。
-   走此路線前必須先讀本 plugin `rules/pencil-bridge.md` 原文（不摘要），並跑 `bin/pencil-preflight.ps1`。
-   該檔第四節的 dump 與 `bin/pen-verify.mjs` 不綠，不得宣告設計完成、不得開票。
 3. 畫面契約：每畫面產 `src/schemas/<畫面名>.ts`（zod schema＋action 簽名；註解＝資料哪裡來）。
    外部平台欄位用 /research 查官方文件填入＋註出處；查無 → 記 UNKNOWN，禁自創。
 4. 逐頁生成：每畫面一個 subagent，**一頁落盤再派下一頁**（同 workflow.md「預設循序」；實測平行的協調等待比生成本身更花時間）；派工 prompt 附風格錨 token＋共用 mocks 入口

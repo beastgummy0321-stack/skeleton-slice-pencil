@@ -32,7 +32,7 @@ claude plugin install skeleton-slice-pencil@skeleton-slice-pencil
 | `skills/slice/` | 日常入口：分流（快改／三站切片：補問凍結→做後端→換真線＋拔根測試）、斷點續跑 |
 | `skills/container-contract/` | 集裝箱憲章觸發器 |
 | `skills/setup-workflow/` | 外部依賴安裝精靈 |
-| `rules/` | 規範本體（英文，注入 95 行）：workflow（分工＋交件閘＋退件上限）、reuse-first、container-contract（模組邊界）、screen-contract（畫面契約） |
+| `rules/` | 規範本體（英文，注入 96 行）：workflow（分工＋交件閘＋退件上限）、reuse-first、container-contract（模組邊界）、screen-contract（畫面契約） |
 | `hooks/session-rules.mjs` | SessionStart 把 workflow／reuse-first 注入每個 session |
 | `hooks/load-budget.mjs` | PostToolUse 規範檔閘門：CLAUDE.md／AGENTS.md 及 @ 引用檔合計 500 行上限 |
 | `hooks/doc-budget.mjs` | PostToolUse 文件閘門：`git ls-files "*.md"` 總行數只准降不准升。基線自動長在 `.claude/doc-budget.json`，只有使用者能調高 |
@@ -72,36 +72,12 @@ claude plugin install skeleton-slice-pencil@skeleton-slice-pencil
 
 ---
 
-## Pencil 版多了什麼
+## Pencil 相關內容已移除（v4.7.0）
 
-| 檔案 | 用途 |
-|---|---|
-| `rules/pencil-bridge.md` | 接線規範。由 `/skeleton` 第 4 節在走 Pencil 路線時載入原文；沒用 Pencil 就不載，不佔 context |
-| `bin/pencil-preflight.ps1` | 開檔 preflight。離開碼 0 已就緒、2 需要人在 GUI 點一下 New File |
-| `bin/pen-verify.mjs` | 設計快照落盤閘。不綠不得宣告設計完成、不得開票 |
+`rules/pencil-bridge.md`、`bin/pencil-preflight.ps1`、`bin/pen-verify.mjs` 與 `/skeleton` 的
+Pencil 路線都已刪除：那是為單一設計工具寫的規範，只服務一種場景。要回頭看用 `git log`。
+plugin 名字暫時保留 `skeleton-slice-pencil`——改名會逼所有安裝過的人重裝，不值得。
 
-`skills/skeleton/SKILL.md` 第 4 節加了「Pencil 路線（可選）」、原型天花板、原型模式三選一、文案分桶；
-`skills/slice/SKILL.md` 第 2 節分流表擴為「新畫面或新狀態」；`skills/setup-workflow/SKILL.md` 加 Frontend Pack；
-`rules/screen-contract.md` 第二節加風格錨與 tracer 例外。hook 與原版相同。
-
-### 收編邊界（一句話版）
-
-Pencil 只當設計檔的讀寫介面，**不是第三個寫程式的人**。
-`.pen` → React component 一律開票派 Sonnet，過機器組。細節看 `rules/pencil-bridge.md`。
-
-### 實測基準（Pencil 1.2.0 / Windows 11 / 2026-08-20，兩輪丟棄專案試跑）
-
-已證實可行：
-- Pencil 官方 shadcn/ui library 帶進 90+ component 與 28 個**與 shadcn 同名**的 CSS 變數
-- `execute` 一次建完三個畫面（116 節點）不出錯；設計品質可用
-- 設計快照可 dump 成純 JSON 進 repo（17.6KB／116 節點），可 diff、可當票的附件
-
-已證實不可行，不要重踩：
-- MCP 開不了檔也建不了檔；**唯一可靠的建檔方式是在 GUI 點 New File**
-- 命令列帶路徑開檔會開出「不含檔案內容且不 render」的文件
-- `Ctrl+S` 不寫檔；曾觀察到自動落盤但機制不明、無法重現
-- `TakeScreenshot` 與 `Export png` 回傳空白；目視驗證要走 `Export html-tailwind` → dev server → 瀏覽器截圖
-- `Export html-tailwind` 掛 Tailwind v3 CDN、`var(--)` 出現 0 次、硬編 hex；只能當參考稿
-- library 匯入沒有 MCP API，只能在 GUI 點
-
-兩輪試跑的完整紀錄與冷眼審查在實驗 repo（`pen-lab-app`／`pen-lab-app-2` 的 `RUN-LOG.md`），未隨 plugin 發佈。
+`skills/skeleton/SKILL.md` 第 4 節有原型天花板、原型模式三選一、文案分桶；
+`skills/slice/SKILL.md` 第 2 節分流表含「新畫面或新狀態」；`skills/setup-workflow/SKILL.md` 有 Frontend Pack；
+`rules/screen-contract.md` 第二節有風格錨與 tracer 例外。

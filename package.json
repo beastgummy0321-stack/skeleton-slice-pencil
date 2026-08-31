@@ -1,6 +1,6 @@
 {
   "name": "skeleton-slice-pencil",
-  "version": "4.6.1",
+  "version": "4.7.0",
   "private": true,
   "scripts": {
     "test": "node hooks/budget.test.mjs && node hooks/doc-budget.test.mjs"

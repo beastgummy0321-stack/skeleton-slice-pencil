@@ -51,9 +51,7 @@ Record the route: first line of the A/B completion report and the C `slice-NN` c
 
 ### ① 補問凍結
 
-本站第一題＝workflow.md「Premise check」（格式同第 0 節）：這片要達到的結果一句話當題目；
-選項＝他要的做法、≤2 個蓋得更少但結果相同的走法（各附一句放棄了什麼）、必要時一個便宜實驗。
-挑定才清 UNKNOWN；找不到更小的走法一句話帶過，禁硬湊。
+本站第一題＝workflow.md「Premise check」，格式與選項照那一節，這裡不重述。挑定才清 UNKNOWN。
 清空本片 UNKNOWN（/skeleton 推遲下來的業務題）：/grilling 引擎、
 溝通契約覆蓋（一次一題＋選項＋推薦），只問 agent 無權替使用者決定的業務題。
 使用者自己也答不出 → /to-questionnaire 生問卷讓他拿去問懂的人，本片暫停或換片。
