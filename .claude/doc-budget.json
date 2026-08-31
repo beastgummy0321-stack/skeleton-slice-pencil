@@ -1,0 +1,6 @@
+{
+  "trackedMarkdownLines": 725,
+  "files": 12,
+  "measured": "2026-08-31",
+  "note": "Ratchet: may only go down. Agents never raise this -- only the user does, in writing."
+}

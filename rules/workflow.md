@@ -37,7 +37,7 @@ Dispatch prompt = ticket path + `container-contract.md` verbatim. Nothing else.
 
 ## Gate and review
 
-1. Machine gate first: typecheck + depcruise + build (whichever the project actually has) + **only the test files the change affects** — not the whole suite — + **the project's one end-to-end smoke, on every B/C ticket, backend tickets included**: start the app, walk the one path. Integration bugs (the server will not boot, a screen shows `[object Object]`, a job freezes every tenant) surface only there; a gate that skips it finds them all at once after the last ticket lands. A project without that smoke, or whose smoke cannot run from one command, gets it as its next ticket. Red = not delivered; return to implementer, no review.
+1. Machine gate first: typecheck + depcruise + doc-budget + build (whichever the project actually has) + **only the test files the change affects** — not the whole suite — + **the project's one end-to-end smoke, on every B/C ticket, backend tickets included**: start the app, walk the one path. Integration bugs (the server will not boot, a screen shows `[object Object]`, a job freezes every tenant) surface only there; a gate that skips it finds them all at once after the last ticket lands. A project without that smoke, or whose smoke cannot run from one command, gets it as its next ticket. Red = not delivered; return to implementer, no review.
    **Two red rounds on the same ticket and the loop stops**: report which done-check is failing and let the user decide whether the ticket or the approach changes. No third automatic retry.
    **Walk the acceptance steps before the user does.** When the completion report's acceptance steps open a screen — any route, copy changes included — a Haiku subagent walks them with `playwright-cli` before the report reaches the user: each step gets ✅/❌ plus a screenshot path; the first ❌ is a red gate (return to implementer, no review; the two-round stop applies). Dispatch prompt = the acceptance steps verbatim + the app URL + this line: "run `playwright-cli --help` and read the SKILL.md it names; snapshot first, click by ref". The walker is never the implementer. A project behind a login saves `playwright-cli state-save auth.json` once by hand; the walker loads it. The walk proves reachable, text present, no error — the user still judges whether it feels right. Per the preamble, this check counts only after it has been seen red once on a real project.
 2. Routes A/B: machine gate green → done. **A/B is the default.** A behaviour change is route B unless it lands in the route C list below.
@@ -55,7 +55,6 @@ Tests are code someone maintains; more of them is not more safety.
 - Delete: a test asserting a screen string equals a literal; duplicates of one behaviour that differ only in fixture.
 - Keep: data correctness, money arithmetic, tenant isolation, module boundaries, API contract shape.
 - The test-to-production line ratio is held by a **gate in the repo** — one frozen number that may only go down — not by a number written here. A limit in prose is not a limit. Trim while already rewriting that layer, never as a refactor round of its own.
-- The 800-line split rule does not apply to test files (preamble).
 
 ## Tickets and parallel work
 
@@ -70,5 +69,5 @@ DB schema/migrations, payments or paid APIs, anything public-facing, deleting re
 
 ## Reporting
 
-Completion report = acceptance steps the user can do by hand (open which screen, click what, see what), each carrying the walker's ✅ and screenshot path when the step opens a screen, **plus one plain line of volume**: how many lines of code and of tests this slice added, and the module's new total. A line count is not jargon, and a report that hides it hides the growth. File lists and endpoints go in git log, not the report.
+Completion report = acceptance steps the user can do by hand (open which screen, click what, see what), each carrying the walker's ✅ and screenshot path when the step opens a screen, **plus one plain line of volume**: how many lines of code and of tests this slice added, and the module's new total. A line count is not jargon, and a report that hides it hides the growth. A slice that added a tracked doc names, in the same line, which doc it retired. File lists and endpoints go in git log, not the report.
 Subagent reports: conclusion + `file:line` + what was skipped. Never paste whole files.
