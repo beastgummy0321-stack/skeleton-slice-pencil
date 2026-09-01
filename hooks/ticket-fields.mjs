@@ -4,10 +4,34 @@
 // at /slice station (1) is prose, held by the gate there and by the reviewer.
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { execFileSync } from 'node:child_process';
+import { sweep } from './adr-index.mjs';
 
 let payload;
 try { payload = JSON.parse(readFileSync(0, 'utf8')); } catch { process.exit(0); }
 if (payload?.tool_name !== 'Agent') process.exit(0);
+
+const cwd = payload?.cwd || process.cwd();
+
+// The ADR write-time hook only ever sees one Write/Edit. An ADR that arrived by Bash
+// heredoc, a rename that stranded an applies-to, a duplicated id, a retirement claimed
+// from one side only -- none of them pass through it. They all do damage at exactly this
+// moment, when an agent is about to be handed a decision that no longer holds, so the
+// full sweep runs here rather than at the keyhole.
+let root = cwd;
+try { root = execFileSync('git', ['rev-parse', '--show-toplevel'], { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim(); } catch {}
+const { problems, warnings } = sweep(root);
+if (problems.length) {
+  process.stderr.write(
+    `adr-sweep: ${problems.length} problem(s) in the decision record. An agent dispatched now ` +
+    `would be handed a decision that cannot be found, or two that contradict.\n` +
+    problems.map((p) => `  - ${p}`).join('\n') + '\n' +
+    (warnings.length ? `${warnings.map((w) => `  (warning) ${w}`).join('\n')}\n` : '') +
+    `Fix the record, or move the ADR to docs/adr/retired/. Do not dispatch around it.\n`
+  );
+  process.exit(2);
+}
+if (warnings.length) process.stderr.write(`adr-sweep: ${warnings.map((w) => `\n  (warning) ${w}`).join('')}\n`);
 
 const named = (payload?.tool_input?.prompt ?? '').match(/[\w./\\-]*docs[/\\]issues[/\\][\w./\\-]+\.md/);
 if (!named) process.exit(0);          // no ticket named: nothing this gate can judge

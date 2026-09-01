@@ -32,10 +32,11 @@ claude plugin install skeleton-slice-pencil@skeleton-slice-pencil
 | `skills/slice/` | 日常入口：分流（快改／三站切片：補問凍結→做後端→換真線＋拔根測試）、斷點續跑 |
 | `skills/container-contract/` | 集裝箱憲章觸發器 |
 | `skills/setup-workflow/` | 外部依賴安裝精靈 |
-| `rules/` | 規範本體（英文，注入 113 行）：workflow（分工＋交件閘＋退件上限）、reuse-first、container-contract（模組邊界）、screen-contract（畫面契約） |
+| `rules/` | 規範本體（英文，注入 114 行）：workflow（分工＋交件閘＋退件上限）、reuse-first、container-contract（模組邊界）、screen-contract（畫面契約） |
 | `hooks/session-rules.mjs` | SessionStart 把 workflow／reuse-first 注入每個 session |
 | `hooks/load-budget.mjs` | PostToolUse 規範檔閘門：CLAUDE.md／AGENTS.md 及 @ 引用檔合計 500 行上限 |
-| `hooks/adr-index.mjs` | 雙模式。PostToolUse 閘門：`docs/adr/` 下的 ADR 必須帶 `id`／`decision`（裁決本身，一句、≤120 字）／`applies-to`／`status` 前置資料；ADR 內文長度不限。CLI：`node hooks/adr-index.mjs <path…>` 即時算出該路徑適用的 ADR 索引行（沒有索引檔，不會漂） |
+| `hooks/adr-index.mjs` | 三模式。PostToolUse 閘門：`docs/adr/` 下的 ADR 必須帶 `id`／`decision`（裁決本身，一句、≤120 字）／`applies-to`／`supersedes`（取代誰，或 `none`）／`status` 前置資料；ADR 內文長度不限。CLI：`node hooks/adr-index.mjs <path…>` 即時算出該路徑適用的 ADR 索引行（沒有索引檔，不會漂）。`sweep()` 給派工閘用 |
+| `hooks/ticket-fields.mjs` | PreToolUse 派工閘：票的三欄要填滿，**並且**整份決策紀錄要掃過一遍——Bash 寫進來的 ADR、改名後失效的 `applies-to`、重複 id、放深一層的檔、合約頁引用已死的 id，都擋在派工當下 |
 
 ## 外部依賴（/setup-workflow 代裝，先問過你）
 
