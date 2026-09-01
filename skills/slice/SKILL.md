@@ -60,7 +60,7 @@ UNKNOWN 收錄門檻（防規劃無限延長）：只收不可逆表命中、或
 線外細節不列 UNKNOWN，實作時 agent 自決＋標 `ponytail:` 註解。
 每題過四格路由（同 /skeleton 溝通契約）：使用者不確定 → 先探路
 （agent 讀 code＋查同類產品 → 2–4 選項＋取捨＋推薦）再問，禁追問第三次。
-關卡：UNKNOWN 清空 → schema 凍結＋commit `slice-NN: schema frozen`。
+關卡：UNKNOWN 清空 →（有動 schema 才凍結＋commit `slice-NN: schema frozen`）→ 開票 `docs/issues/<slug>/ticket.md`，三欄照 workflow.md「Spec before dispatch」；答不出的欄位升級，不得填空。
 
 ### ② 做後端
 

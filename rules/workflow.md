@@ -40,9 +40,9 @@ A /to-spec output, and the ticket list that follows it, get one review by an age
 
 Its output is shown to the user as a note before they approve — never a veto, never a re-review, one round only. The planner does not review its own plan, for the same reason the implementer does not review its own diff: thirty rounds of sharpening a plan leave no room to say the plan is wrong.
 
-## Spec before dispatch (route C only)
+## Spec before dispatch
 
-Ticket = 3 fields: **what** (contract with a literal JSON example), **how we know it's done** (checks that are runnable or would fail a test, **each spelling out the gate command verbatim, including which test files it runs**), **shared files touched**. `N/A + one reason` counts as filled.
+The ticket file is written by the main chat at /slice station ①, one per slice, at `docs/issues/<slug>/ticket.md`; the 大 route's `/to-tickets` output is rewritten into this shape, at this path, before any dispatch. Ticket = 3 fields: **what** (contract with a literal JSON example), **how we know it's done** (checks that are runnable or would fail a test, **each spelling out the gate command verbatim, including which test files it runs**), **shared files touched**. `N/A + one reason` counts as filled; a field the ticket cannot answer is escalated, never filled. A ticket missing a field is not dispatched — held by the `ticket-fields` gate.
 Dispatch prompt = ticket path + `container-contract.md` verbatim. Nothing else.
 
 ## Gate and review
@@ -68,7 +68,7 @@ Tests are code someone maintains; more of them is not more safety.
 
 ## Tickets and parallel work
 
-- Work bigger than one ticket: /to-spec → /to-tickets, slice vertically (schema → API → screen → test), user approves the list, then dispatch. /to-tickets writes Matt's ticket shape (what to build, blocked by, acceptance criteria); before dispatch each ticket is reshaped into the 3-field ticket above, gate command verbatim included. A ticket missing a field is not dispatched.
+- Work bigger than one ticket: /to-spec → /to-tickets, slice vertically (schema → API → screen → test), user approves the list, then dispatch. /to-tickets writes Matt's ticket shape (what to build, blocked by, acceptance criteria); the main chat then rewrites each into the 3-field ticket above, at the path named there, before dispatch.
 - **Work sequentially. Parallel worktrees are the exception**, earned only when two tickets touch no file in common *and* each is over half a day. Measured: parallel coordination is the largest time sink in practice — agents stall waiting for notifications that never arrive.
 - Merge one line at a time; run the **full** test suite on main after each merge — that is the only place the whole suite runs.
 - After dispatching, say what is running and **do not promise a time** — nobody can predict an agent run. The user may start the next slice or wait; overlapping is an option, never an obligation.

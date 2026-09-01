@@ -1,6 +1,6 @@
 {
   "name": "skeleton-slice-pencil",
-  "version": "5.0.0",
+  "version": "5.1.0",
   "description": "可攜開發工作流：Gate A 架構共識（憲法≤20行＋模組圖＋借鑑）→ /skeleton 初始化 → /slice 換真線；空白不是授權——難逆轉決定未裁決＝升級，不自行填空；單一文件樹 CONSTITUTION.md→docs/；集裝箱憲章、模型分工（Fable→Opus→Sonnet→Haiku）、reuse-first。",
   "author": {
     "name": "beastgummy0321-stack"

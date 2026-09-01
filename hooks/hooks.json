@@ -29,6 +29,18 @@
           }
         ]
       }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Agent",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/ticket-fields.mjs\"",
+            "timeout": 10
+          }
+        ]
+      }
     ]
   }
 }
