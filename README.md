@@ -32,10 +32,10 @@ claude plugin install skeleton-slice-pencil@skeleton-slice-pencil
 | `skills/slice/` | 日常入口：分流（快改／三站切片：補問凍結→做後端→換真線＋拔根測試）、斷點續跑 |
 | `skills/container-contract/` | 集裝箱憲章觸發器 |
 | `skills/setup-workflow/` | 外部依賴安裝精靈 |
-| `rules/` | 規範本體（英文，注入 96 行）：workflow（分工＋交件閘＋退件上限）、reuse-first、container-contract（模組邊界）、screen-contract（畫面契約） |
+| `rules/` | 規範本體（英文，注入 113 行）：workflow（分工＋交件閘＋退件上限）、reuse-first、container-contract（模組邊界）、screen-contract（畫面契約） |
 | `hooks/session-rules.mjs` | SessionStart 把 workflow／reuse-first 注入每個 session |
 | `hooks/load-budget.mjs` | PostToolUse 規範檔閘門：CLAUDE.md／AGENTS.md 及 @ 引用檔合計 500 行上限 |
-| `hooks/doc-budget.mjs` | PostToolUse 文件閘門：`git ls-files "*.md"` 總行數只准降不准升。基線自動長在 `.claude/doc-budget.json`，只有使用者能調高 |
+| `hooks/adr-index.mjs` | 雙模式。PostToolUse 閘門：`docs/adr/` 下的 ADR 必須帶 `id`／`decision`（裁決本身，一句、≤120 字）／`applies-to`／`status` 前置資料；ADR 內文長度不限。CLI：`node hooks/adr-index.mjs <path…>` 即時算出該路徑適用的 ADR 索引行（沒有索引檔，不會漂） |
 
 ## 外部依賴（/setup-workflow 代裝，先問過你）
 

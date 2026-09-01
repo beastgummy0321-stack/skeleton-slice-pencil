@@ -6,7 +6,8 @@ if (root) {
   const files = ['preamble.md', 'workflow.md', 'reuse-first.md'];
   let out = '';
   for (const f of files) {
-    try { out += readFileSync(join(root, 'rules', f), 'utf8') + '\n\n'; } catch {}
+    // {{PLUGIN_ROOT}} resolves here, so a command the rules name is runnable as printed.
+    try { out += readFileSync(join(root, 'rules', f), 'utf8').replaceAll('{{PLUGIN_ROOT}}', root) + '\n\n'; } catch {}
   }
   if (out) process.stdout.write(out);
 }
