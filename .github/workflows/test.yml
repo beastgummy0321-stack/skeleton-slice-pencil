@@ -8,7 +8,14 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    # Both, because these hooks run on the author's Windows machine and CI is Linux: a
+    # `cmd /c move` in a test was green locally and dead on CI for two releases, and one
+    # platform can only ever catch half of that.
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

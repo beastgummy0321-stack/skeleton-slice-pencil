@@ -1,4 +1,4 @@
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync, renameSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
@@ -102,9 +102,11 @@ try {
   noProblems('removing it clears the sweep');
 
   // ---- S2: a rename strands an applies-to, and nobody rewrites the ADR ---------
-  execFileSync('cmd', ['/c', 'move', join(root, 'app', 'queue'), join(root, 'app', 'jobs')], { stdio: 'ignore' });
+  // renameSync, not `cmd /c move`: CI runs on ubuntu, where spawning `cmd` is ENOENT and
+  // the whole suite dies before it reaches anything else. Green on Windows, red everywhere.
+  renameSync(join(root, 'app', 'queue'), join(root, 'app', 'jobs'));
   nProblems('do not exist', 2, 'the sweep catches every ADR stranded by the rename, none of them touched');
-  execFileSync('cmd', ['/c', 'move', join(root, 'app', 'jobs'), join(root, 'app', 'queue')], { stdio: 'ignore' });
+  renameSync(join(root, 'app', 'jobs'), join(root, 'app', 'queue'));
   noProblems('restoring the path clears it');
 
   // ---- S4: the same id twice ---------------------------------------------------
