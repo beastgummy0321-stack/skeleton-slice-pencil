@@ -6,6 +6,12 @@ Main chat holds direction, irreversible decisions and final accept, and **does i
 scans** — at 1M context a grep returning twenty lines costs nothing, while dispatching it costs a
 round-trip and loses the judgement that made the scan worth running.
 
+**Main chat never stages with `git add -A` while a dispatch is in flight**; it stages the paths it
+changed. The tree is shared with every running agent, so a blanket stage commits their unfinished
+work under main chat's message. Measured: a documents-only commit swept in an implementer's
+half-written migration, and "route=A: documents only, no code" is now permanently false in a
+history whose whole purpose is to be trusted later.
+
 Every post is named, because a tier that is never dispatched is not a policy, it is decoration —
 measured: Haiku's usage was zero for as long as its only line here read "takes long logs".
 
@@ -87,6 +93,7 @@ Deleting a module is the same shape with paths instead of ids: the vocabulary fi
    **`reject` = an implementation slip**, and is allowed only for: a done-check fails, machine gate red, a container-contract violation, or code and tests beyond what the done-checks require (the ceiling — a branch, a field, an abstraction, a test no done-check names). It must **quote the done-check it fails or exceeds, word for word**. Style, taste, naming, "could be simpler" = a note, never a reject. It routes to a new implementer.
    **`blocked-upstream` = the ticket is what is wrong**, and it never routes to an implementer — it goes to main chat, and from there to the user. Use it when the done-checks contradict each other; when a done-check is ambiguous enough that two readings both pass; when the ticket contradicts the constitution, an ADR or a contract page; when a file the work needs is missing from `## Shared files touched`; or when **the diff carries a defect in one of the four route C classes — schema, module boundary, money, permission/tenant isolation — that no done-check names.**
    That last clause is the one that was missing, and it cost a shipped cross-tenant leak in testing: a reviewer found a query filtering on `brand_id` with `org_id` accepted and ignored, wrote it down, and shipped, because "no done-check requires org_id filtering". A defect in those four classes is **never a note**. An incomplete done-check list is an upstream fault; routing it to the implementer is how it gets shipped.
+   **On those four classes the reviewer spends part of its round attacking the thing the ticket claims to protect** — one attempt, not a campaign, and inside the single review that already happens, so this buys no extra round and no extra agent. Reading a diff answers "does this match the ticket"; only trying to break it answers "does this hold". Measured: eight machine gates and a 710-test suite were green over a live credential leak, because nothing in a test suite ever creates a temp table to shadow a lookup — the reviewer that was told to try broke it on the first attempt. Where the ticket claims a lock, the reviewer picks it; where it claims isolation, the reviewer tries to read the other tenant's row.
    A reject is appended to the ticket file under `## Rejected` — the quoted done-check plus the evidence — before re-dispatch; the dispatch prompt itself does not change, so the record is the only way the next round learns what failed. A `blocked-upstream` is appended under `## Blocked` and **no re-dispatch follows it**.
 4. At most one re-review. Still disputed → Fable decides.
 5. Trust machine output and `git diff`, not the worker's prose.
@@ -104,6 +111,8 @@ Tests are code someone maintains; more of them is not more safety.
 
 - Work bigger than one ticket: /to-spec → /to-tickets, slice vertically (schema → API → screen → test), user approves the list, then dispatch. /to-tickets writes Matt's ticket shape (what to build, blocked by, acceptance criteria); the main chat then rewrites each into the 3-field ticket above, at the path named there, before dispatch.
 - **Work sequentially. Parallel worktrees are the exception**, earned only when two tickets touch no file in common *and* each is over half a day. Measured: parallel coordination is the largest time sink in practice — agents stall waiting for notifications that never arrive.
+- **Before sizing a ticket whose blast radius is unknown, main chat makes the change throwaway, runs the suite once, and reverts.** Minutes, no dispatch, no ticket. It is the cheapest thing in this file and it replaces the most expensive kind of guess. Measured: "flip tenant isolation on, 1–2 days, unknown fallout" became "22 of 708 red, every one the same missing grant" — which turned one un-diagnosable ticket into three, and the two that followed landed with zero fallout between them.
+- **A change that flips a behaviour globally lands in two tickets: the structure it needs, dormant, then the flip.** The dormant half changes nothing, so the existing suite green *is* its proof, and the flip arrives on ground already prepared. One ticket doing both goes red in a way nobody can attribute to a half. Measured on that same slice: the dormant tickets were provable at zero extra cost, and the flip that followed needed no fallout fix at all.
 - Merge one line at a time; run the **full** test suite on main after each merge — that is the only place the whole suite runs.
 - After dispatching, say what is running and **do not promise a time** — nobody can predict an agent run. The user may start the next slice or wait; overlapping is an option, never an obligation.
 
