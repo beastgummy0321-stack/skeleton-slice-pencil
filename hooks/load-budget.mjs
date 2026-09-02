@@ -1,6 +1,10 @@
 // PostToolUse hook: always-loaded rule files must stay under LIMIT lines in total.
-// Counted: CLAUDE.md / AGENTS.md, the files they @-import, and every .claude/rules/*.md
-// without `paths:` frontmatter — those load on every session too; path-scoped ones do not.
+// Counted: CLAUDE.md / AGENTS.md, the files they @-import, every .claude/rules/*.md without
+// `paths:` frontmatter — those load on every session too; path-scoped ones do not — and the
+// files this plugin's own SessionStart hook injects, which are as always-loaded as anything
+// here. Leaving those out made the number decoration: the budget exists so the loaded surface
+// cannot creep, and the surface that creeps most is the one the budget's own author writes.
+// agent-brief.md is NOT counted: it rides in dispatch prompts, not in the session.
 import { readFileSync, existsSync, realpathSync, readdirSync } from 'node:fs';
 import { join, dirname, isAbsolute } from 'node:path';
 import { homedir } from 'node:os';
@@ -41,6 +45,12 @@ const walkRules = (dir) => {
 };
 walkRules(join(homedir(), '.claude', 'rules'));
 walkRules(join(cwd, '.claude', 'rules'));
+
+const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || process.env.PLUGIN_ROOT;
+if (pluginRoot) for (const f of ['preamble.md', 'workflow.md', 'reuse-first.md']) {
+  const path = join(pluginRoot, 'rules', f);
+  if (existsSync(path)) addFile(path);
+}
 
 for (const root of roots) {
   if (!existsSync(root)) continue;

@@ -32,7 +32,7 @@ description: 做下一片——初始化之後的一切開發入口：換真線�
 
 | 判定 | 條件 | 路線 |
 |---|---|---|
-| A | 只動樣式／文案／間距 | 直接改 → lint → 驗工單先走一遍（workflow.md Gate）→ 完工回報。動到「讀的字」照 /skeleton 第 4 節第 6 點過 humanizer。不進看板 |
+| A | 只動樣式／文案／間距 | 直接改 → lint → 完工回報（**不派小幫手走瀏覽器**：沒動行為的文案／間距，派一個 agent 去確認一個字改了，比讀那個字還貴；使用者自己看一眼就夠）。動到「讀的字」照 /skeleton 第 4 節第 6 點過 humanizer。不進看板 |
 | B | Behaviour change; schema, module entry points, money and permission paths all untouched. **Default route.** | Confirm expected behaviour → edit → any branch/loop/money path gets one runnable check → machine gate (workflow.md Gate) → four-state spot check **only if UI changed** → acceptance-step walk (workflow.md Gate) → report. Not on board |
 | C | 只有這四類（加換真線）：schema／migration、模組邊界、金流、權限／租戶隔離 | 開片（或認領既有 `[ ]` 行）→ 三站 |
 | New screen or state | Page or user-visible state absent from the prototype **and needing new data** (schema field or action; screen-contract.md scope). No new data → route B | 先照 /skeleton 第 4 節同風格錨生成假資料版（含該節「原型天花板」）＋看板加行，再走 C |
@@ -61,6 +61,10 @@ UNKNOWN 收錄門檻（防規劃無限延長）：只收不可逆表命中、或
 每題過四格路由（同 /skeleton 溝通契約）：使用者不確定 → 先探路
 （agent 讀 code＋查同類產品 → 2–4 選項＋取捨＋推薦）再問，禁追問第三次。
 關卡：UNKNOWN 清空 →（有動 schema 才凍結＋commit `slice-NN: schema frozen`）→ 開票 `docs/issues/<slug>/ticket.md`，三欄照 workflow.md「Spec before dispatch」；答不出的欄位升級，不得填空。
+**開票最後一步：在票上寫 `## Contradiction check`**——哪兩條 done-check 可能互相矛盾、什麼輸入會戳破。
+機器閘門只看欄位有沒有填，不看填的東西彼此相不相容；實測一張同時要求
+「金額不變」與「每人等額」、矩陣含 (100, 3) 的票通過了全部閘門，燒掉三輪 agent 才證明 3 除不盡 100。
+答不出這一題的人手上拿的是升級案，不是票。
 
 ### ② 做後端
 
@@ -69,14 +73,28 @@ UNKNOWN 收錄門檻（防規劃無限延長）：只收不可逆表命中、或
 「之後可能會用到」的抽象一律不寫。**done-checks 全綠即停，禁再打磨。**
 
 照凍結 schema 實作真 handler（派 Sonnet）。
-派實作 subagent 時附：凍結 schema 原文＋本 plugin 的 `rules/container-contract.md`（本 SKILL.md 上兩層的 rules 目錄） 原文（不摘要、不重寫）。
+派實作 subagent 時附：凍結 schema 原文＋本 plugin 的 `rules/agent-brief.md` 與 `rules/container-contract.md`
+（本 SKILL.md 上兩層的 rules 目錄）原文（不摘要、不重寫）。
+`agent-brief.md` 不能省：SessionStart 只注入主對話台，子 agent 從來沒讀過 workflow.md，
+優先序、三種出口、「牆不是繞道」這些它被審的規則，只有跟著派工單走才會到它手上。
 金流／解析／複雜分支 → /tdd。
 交件閘＝機器組：type check＋depcruise＋受影響測試＋build 全綠才准進審查（workflow.md Gate）；對話台在驗收前跑一次，不得省略。
-**同一張票撞紅兩次仍不綠 → 停止重試**，回報「卡在哪一條 done-check」，由使用者決定改票還是改做法。禁第三次自動重跑。
+**第二次紅要換工作種類，不是換 agent。**
+第一次紅 → 換一個**全新** Sonnet 實作 agent 重派（禁止把失敗的那個 agent 叫回來繼續——壞掉的上下文本身就是壞掉的一部分）。
+第二次紅 → **停止實作**，改派一個 Opus 唯讀根因 agent（prompt 開頭寫 `ROOT CAUSE (second red):`，否則 hook 會擋），
+給它票、兩輪回報與 diff，只准回三行：錯在哪一層（憲法／ADR／契約／票／實作）、解鎖要改的那一個東西、那個改動的代價。
+主對話台拿這三行去問使用者——給決定，不是給症狀。沒有第三次。
+（實測：全新 agent、乾淨上下文、同一張壞票，第二輪產出與第一輪逐字相同，花掉 59,834 token。）
 派工後告知使用者現在在跑什麼，**不承諾時間**——沒有人能預測一個 agent 跑多久，開了就是空頭支票。
 接著問他要開始下一片的①站補問、還是等這片。**重疊是選項，不是義務**：
 實測強制重疊會讓多個 agent 卡在等不會來的通知，反而要主對話台自己接手收尾。
-關卡：機器組全綠＋一輪 Sonnet 獨立審查（只對驗收清單與 container-contract；風格意見記備註、不退件；最多複審一次，爭議由主對話裁決）。
+關卡：機器組全綠＋一輪 Sonnet 獨立審查（審查也要附 `rules/agent-brief.md` 原文）。
+判決三種：`ship`／`reject`（實作失誤，必須逐字引用失敗的 done-check，退回**新的**實作 agent）／
+`blocked-upstream`（票本身錯了——done-check 互相矛盾、模稜兩可到兩種讀法都會過、
+牴觸憲法／ADR／契約、需要動票上沒列的共用檔，
+或 **diff 帶著一個 done-check 沒指名、但落在 route C 四類（schema／模組邊界／金流／權限租戶）的缺陷**）。
+`blocked-upstream` **永不退回實作**，直接上主對話台再到使用者。
+風格意見記備註、不退件；最多複審一次，爭議由主對話裁決。
 
 ### ③ 換真線
 

@@ -9,8 +9,12 @@ const root = mkdtempSync(join(tmpdir(), 'ticket-fields-test-'));
 const rel = 'docs/issues/T1-tracer/ticket.md';
 
 const write = (body) => writeFileSync(join(root, rel), body);
-const run = (prompt) => spawnSync(process.execPath, [hook], {
-  input: JSON.stringify({ cwd: root, tool_name: 'Agent', tool_input: { prompt } }),
+const run = (prompt, model = 'sonnet') => spawnSync(process.execPath, [hook], {
+  input: JSON.stringify({ cwd: root, tool_name: 'Agent', tool_input: { prompt, model, subagent_type: 'general-purpose' } }),
+  encoding: 'utf8',
+});
+const runNoModel = (prompt, extra = {}) => spawnSync(process.execPath, [hook], {
+  input: JSON.stringify({ cwd: root, tool_name: 'Agent', tool_input: { prompt, ...extra } }),
   encoding: 'utf8',
 });
 const expect = (r, code, name) => {
@@ -33,6 +37,9 @@ const FULL = [
   '',
   '## Shared files touched',
   '`app/schedule/creative.py`',
+  '',
+  '## Contradiction check',
+  'None: one done-check, one command. No pair to contradict.',
   '',
 ].join('\n');
 
@@ -112,6 +119,37 @@ try {
   // a dispatch naming no ticket is swept too -- the ADRs are read either way
   adr('0057-broken.md', 'no frontmatter\n');
   expect(run('just go and refactor something'), 2, 'the sweep does not depend on a ticket being named');
+
+  // --- model posts ---------------------------------------------------------------------------
+  // proven red: before this gate existed, every one of these dispatched without a word.
+  rmSync(join(root, 'docs/adr/0057-broken.md'));
+
+  // --- the contradiction check is a fourth required section ------------------------------------
+  // proven red: the T1 ticket that burned three agent rounds had all three fields and no section.
+  write(FULL.slice(0, FULL.indexOf('## Contradiction check')));
+  const noContra = run(`Ticket: ${rel}`);
+  expect(noContra, 2, 'a ticket with no contradiction check is not dispatchable');
+  contains(noContra.stderr, 'Contradiction check', 'the block names the missing section');
+  write(FULL);
+  expect(run(`Ticket: ${rel}`), 0, 'filling it restores dispatch');
+
+  expect(run(`Ticket: ${rel}`), 0, 'sonnet at a ticket dispatches');
+
+  const noModel = runNoModel(`Ticket: ${rel}`);
+  expect(noModel, 2, 'a dispatch with no model is blocked');
+  contains(noModel.stderr, 'names no `model`', 'the block says the model is missing');
+
+  expect(runNoModel(`Ticket: ${rel}`, { subagent_type: 'Explore' }), 0,
+    'a named agent type carries its own model and is left alone');
+
+  const opusAtTicket = run(`Ticket: ${rel}`, 'opus');
+  expect(opusAtTicket, 2, 'opus at an implementation ticket is blocked');
+  contains(opusAtTicket.stderr, 'implemented and', 'the block names whose job a ticket is');
+
+  expect(run(`ROOT CAUSE (second red): read ${rel} and both rounds`, 'opus'), 0,
+    "the declared second-red root cause is opus's job and dispatches");
+  expect(run(`PLAN REVIEW: ${rel}`, 'opus'), 0, 'the declared plan review dispatches');
+  expect(run(`Ticket: ${rel}`, 'haiku'), 0, 'haiku is not blocked at a ticket -- it has posts here');
 
   console.log('ticket-fields: all checks passed');
 } finally {

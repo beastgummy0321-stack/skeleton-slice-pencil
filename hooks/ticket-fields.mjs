@@ -1,4 +1,5 @@
-// PreToolUse: a ticket the dispatch prompt names must actually carry its three fields.
+// PreToolUse: a ticket the dispatch prompt names must actually carry its three fields, and the
+// dispatch must name the model that will do the work.
 // It checks that a field is FILLED, never that it is RIGHT -- that stays the review round's
 // job. It also cannot see a route C dispatch that names no ticket at all; writing the ticket
 // at /slice station (1) is prose, held by the gate there and by the reviewer.
@@ -33,6 +34,24 @@ if (problems.length) {
 }
 if (warnings.length) process.stderr.write(`adr-sweep: ${warnings.map((w) => `\n  (warning) ${w}`).join('')}\n`);
 
+// --- Model posts (workflow.md, "Who does what") ---------------------------------------------
+// A tier that is never dispatched is not a policy, it is decoration; a tier dispatched by
+// accident is a bill. Both are settled at this one moment, and prose in a rules file that no
+// subagent ever reads has been losing the argument. Measured: a dispatch carrying
+// "model": "opus" at an implementation ticket passed this hook without a word.
+const REQUIRES_EXPLICIT_MODEL = new Set(['general-purpose', 'claude']);
+const subagentType = String(payload?.tool_input?.subagent_type ?? '');
+const model = String(payload?.tool_input?.model ?? '').toLowerCase();
+if (!model && (subagentType === '' || REQUIRES_EXPLICIT_MODEL.has(subagentType))) {
+  process.stderr.write(
+    'model-post: this dispatch names no `model`. workflow.md gives every post one -- implementer ' +
+    'and reviewer sonnet, root cause and plan review opus, log triage and produced-thing quoting ' +
+    'haiku. An unnamed model is whichever one the harness happens to default to, which is how a ' +
+    'tier ends up at zero usage while the bill lands on another.\n'
+  );
+  process.exit(2);
+}
+
 // The leading `[A-Za-z]:` and the `~` are not decoration. A Windows absolute path carries a
 // drive colon, and a temp or profile dir can carry an 8.3 short name (`RUNNER~1`); neither is a
 // word character, so the old class started matching *after* them and handed back a path with its
@@ -41,6 +60,20 @@ if (warnings.length) process.stderr.write(`adr-sweep: ${warnings.map((w) => `\n 
 // exist" rejection whenever they did not.
 const named = (payload?.tool_input?.prompt ?? '').match(/(?:[A-Za-z]:)?[\w./\\~-]*docs[/\\]issues[/\\][\w./\\-]+\.md/);
 if (!named) process.exit(0);          // no ticket named: nothing this gate can judge
+
+// Opus and Fable have posts, and none of them names a ticket file: architecture, the second-red
+// root cause, plan review. The two that legitimately read a ticket declare themselves, so that an
+// expensive dispatch is a decision someone typed rather than a habit nobody noticed.
+const DECLARED_EXPENSIVE_POST = /ROOT CAUSE \(second red\)|PLAN REVIEW/;
+if (/^(opus|fable)/.test(model) && !DECLARED_EXPENSIVE_POST.test(payload?.tool_input?.prompt ?? '')) {
+  process.stderr.write(
+    `model-post: ${model} is dispatched at a ticket (${named[0]}). Tickets are implemented and ` +
+    `reviewed by sonnet. Opus takes architecture, the second-red root cause and plan review; if ` +
+    `this is one of the latter two, open the prompt with "ROOT CAUSE (second red):" or ` +
+    `"PLAN REVIEW:" so the expensive dispatch is on the record.\n`
+  );
+  process.exit(2);
+}
 
 let body;
 try { body = readFileSync(resolve(payload?.cwd || process.cwd(), named[0]), 'utf8'); }
@@ -72,12 +105,19 @@ check('(what|contract)', '## What',
 check("how we know", "## How we know it's done",
   s => /`[^`\n]+`/.test(s), 'no gate command in backticks');
 check('shared files', '## Shared files touched', () => true);
+// Whether the done-checks AGREE is still not machine-checkable. What is checkable is whether
+// anyone was made to look. Tickets are written per slice and deleted on completion, so this
+// gate has no legacy backlog to go red on -- the objection that keeps the contract pages
+// ungated does not apply here.
+check('contradiction check', '## Contradiction check', () => true);
 
 if (!missing.length) process.exit(0);
 
 process.stderr.write(
   `ticket-fields: ${named[0]} is not dispatchable.\n${missing.map(m => `  - ${m}`).join('\n')}\n` +
-  `Three fields, all filled, before an agent is dispatched (workflow.md, Spec before dispatch).\n` +
+  `Four sections, all filled, before an agent is dispatched (workflow.md, Spec before dispatch):\n` +
+  `the three fields, plus '## Contradiction check' -- which two done-checks could contradict\n` +
+  `each other, and what input would show it. \"None, and here is why\" is a filled answer.\n` +
   `A field the ticket cannot answer is escalated to the user -- never filled in.\n`
 );
 process.exit(2);
