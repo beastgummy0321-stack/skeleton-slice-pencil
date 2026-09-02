@@ -45,6 +45,18 @@ Its output is shown to the user as a note before they approve — never a veto, 
 The ticket file is written by the main chat at /slice station ①, one per slice, at `docs/issues/<slug>/ticket.md`; the 大 route's `/to-tickets` output is rewritten into this shape, at this path, before any dispatch. Ticket = 3 fields: **what** (contract with a literal JSON example), **how we know it's done** (checks that are runnable or would fail a test, **each spelling out the gate command verbatim, including which test files it runs**), **shared files touched**. `N/A + one reason` counts as filled; a field the ticket cannot answer is escalated, never filled. A ticket missing a field is not dispatched — held by the `ticket-fields` gate.
 Dispatch prompt = ticket path + `container-contract.md` verbatim + the ADR index rows for the paths the ticket touches — `node "{{PLUGIN_ROOT}}/hooks/adr-index.mjs" <path…>`, pasted as it prints, including when it prints nothing. Nothing else: an agent is never told to go and find which ADRs apply, and never handed a body that governs something it is not touching.
 
+## Retiring a decision
+
+Retiring an ADR, or deleting a module, is a one-directional move that leaves every inbound pointer dangling — and a dangling pointer reads as present-tense fact to whoever opens the file next, months later, usually an agent. So it is a procedure, not a `git mv`:
+
+1. `grep -rn "ADR 00NN\|<each path being deleted>" --include=*.md .` — before anything moves.
+2. Every hit is fixed in the **same commit**: restate the rule inside the document that needs it, or say in that paragraph that the thing is gone. A rule worth keeping gets restated where it is used; a rule not worth restating was not binding.
+3. Only then `git mv docs/adr/NNNN-*.md docs/adr/retired/`, and set the `supersedes`/`status` pair.
+
+A bulk retirement (a rebuild that voids a dozen ADRs at once) does step 1 **once for the whole set** before it moves the first file. That is the case the sweep exists to catch, because it is the case where the cost is invisible: eighteen ADRs retired in one commit produced roughly twenty dangling citations, and nothing went red for a day.
+
+Deleting a module is the same shape with paths instead of ids: the vocabulary file is the one that rots hardest, because it is written in the present tense about what exists.
+
 ## Gate and review
 
 1. Machine gate first: typecheck + depcruise + build (whichever the project actually has) + **only the test files the change affects** — not the whole suite — + **the project's one end-to-end smoke, on every B/C ticket, backend tickets included**: start the app, walk the one path. Integration bugs (the server will not boot, a screen shows `[object Object]`, a job freezes every tenant) surface only there; a gate that skips it finds them all at once after the last ticket lands. A project without that smoke, or whose smoke cannot run from one command, gets it as its next ticket. Red = not delivered; return to implementer, no review.

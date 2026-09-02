@@ -156,6 +156,42 @@ try {
   if (!warnings().some((w) => w.includes('0063'))) throw new Error('an over-broad applies-to should warn');
   rmSync(join(root, 'docs', 'adr', '0063-broad.md'));
 
+  // ---- S9: an in-force page still naming a decision retired under it ----------
+  // `docs/adr/retired/0001-old.md` was moved out of the read path far above; every doc that
+  // pointed at it kept pointing, and nothing looked. This is that check.
+  const ctx = join(root, 'CONTEXT.md');
+  writeFileSync(ctx, '# vocab\n\nThe ceiling is fixed by ADR 0001 §1.\n');
+  oneProblem('names ADR 0001', 'a doc naming a retired ADR is red');
+  writeFileSync(ctx, '# vocab\n\nThe ceiling came from ADR 0001, which was retired; the test is restated here.\n');
+  noProblems('saying it is retired in the same paragraph clears it -- the escape hatch is the fix');
+  writeFileSync(ctx, '# vocab\n\nADR 0001 fixes the ceiling.\n\n(0001 was retired, elsewhere in the file.)\n');
+  oneProblem('names ADR 0001', 'the admission has to sit in the paragraph that makes the claim');
+  writeFileSync(ctx, '# vocab\n\nThe queue rule is ADR 0042.\n');
+  noProblems('naming an in-force ADR is fine');
+  writeFileSync(ctx, '# vocab\n\nPort 0042, the year 2026 and row 0055 are not citations.\n');
+  noProblems('a bare four-digit number is never a citation');
+  writeFileSync(ctx, '# vocab\n\nSee docs/adr/0099-nothing.md for the rule.\n');
+  oneProblem('names ADR 0099', 'a path-style citation of an ADR that never existed is red');
+  writeFileSync(ctx, '# vocab\n\nSee ADR 0055.\n');
+  oneProblem('names ADR 0055', 'naming a superseded ADR without saying so is red too');
+  writeFileSync(join(root, 'docs', 'contracts', 'queue.md'), '# queue\n\nThe old shape is ADR 0001.\n\n## decisions in force\n\n- 0042\n');
+  oneProblem('docs/contracts/queue.md — names ADR 0001', 'contract prose outside the decisions list is swept as well');
+  writeFileSync(join(root, 'docs', 'contracts', 'queue.md'), '# queue\n\n## decisions in force\n\n- 0042\n');
+  writeFileSync(ctx, '# no frontmatter here\n');
+  noProblems('restored');
+
+  // ---- S10: written by Bash, which carries no file_path at all -----------------
+  const onBash = (command) => spawnSync(process.execPath, [hook, '--hook'], {
+    input: JSON.stringify({ cwd: root, tool_name: 'Bash', tool_input: { command } }),
+    encoding: 'utf8',
+  });
+  writeFileSync(join(root, 'docs', 'adr', '0064-bash.md'), '# no frontmatter at all\n');
+  expect(onBash('cat > docs/adr/0064-bash.md <<EOF'), 2, 'a Bash write naming the ADR dir runs the full sweep');
+  contains(onBash('cat > docs/adr/0064-bash.md <<EOF').stderr, '0064-bash.md', 'and names what it found');
+  expect(onBash('npm test'), 0, 'a command that never names the ADR dir is left to the dispatch sweep');
+  rmSync(join(root, 'docs', 'adr', '0064-bash.md'));
+  expect(onBash('sed -i s/x/y/ docs/adr/0042-queue.md'), 0, 'a clean record does not block');
+
   // ---- the index itself still works -------------------------------------------
   const queueOnly = cli('app/queue/');
   contains(queueOnly.stdout, '0042', 'filtering by app/queue/ keeps its ADR');

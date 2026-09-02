@@ -7,11 +7,13 @@
 //   hook (`--hook`, stdin JSON, PostToolUse) -- fast feedback while an ADR is being written.
 //   CLI  (`node adr-index.mjs [path|module ...]`) -- prints the index rows that match,
 //        computed from the frontmatter every time. There is no index file to drift.
-//   sweep(root) -- imported by the dispatch gate. The write-time hook only ever sees a
-//        Write/Edit to one file, so everything that arrives another way (a Bash heredoc,
-//        a rename that strands an applies-to, a second file claiming the same id) walks
-//        straight past it. The sweep reads every ADR on disk, however it got there, and
-//        runs at the one moment a stale decision does damage: dispatching an agent.
+//   sweep(root) -- imported by the dispatch gate, and run by the hook itself whenever a
+//        Bash/PowerShell command names the ADR dir. The write-time hook otherwise sees only a
+//        Write/Edit to one file, so everything arriving another way (a rename that strands an
+//        applies-to, a second file claiming the same id, an in-force page still citing a
+//        decision that was retired under it) walks straight past it. The sweep reads every ADR
+//        on disk, however it got there, and runs at both moments a stale decision does damage:
+//        writing it, and dispatching an agent onto it.
 import { readFileSync, readdirSync, existsSync, statSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -63,6 +65,33 @@ const under = (a, b) => {
 };
 const touches = (appliesTo, filter) => appliesTo.some((a) => under(a, filter));
 export const overlaps = (a, b) => a.some((x) => b.some((y) => under(x, y)));
+
+// `ADR 0042`, `ADR-0042`, `adr/0042`, `docs/adr/0042-name.md`. A bare four-digit number is
+// never a citation -- it is a year, a port, a table row -- so the prefix is required.
+const CITES_ADR = /\bADRs?[\s:_-]*(\d{4})\b|\badr\/(?:retired\/)?(\d{4})/gi;
+// The paragraph admits the thing is gone. Covers retire/retires/retired/retirement and
+// supersede/supersedes/superseded/取代, in both languages this workflow gets written in.
+const SAYS_GONE = /retir|supersed|deleted|no longer|退休|作廢|取代|已刪|不存在|已移除/i;
+
+// The doc tree from preamble.md: the entry files, plus docs/ minus the two folders that are
+// deliberately out of the read path (retired ADRs, and tickets that die with their board row).
+const docPages = (root) => {
+  const out = [];
+  for (const f of ['CONSTITUTION.md', 'CLAUDE.md', 'CONTEXT.md', 'BOARD.md']) {
+    if (existsSync(join(root, f))) out.push(f);
+  }
+  const walkDocs = (dir) => {
+    let entries;
+    try { entries = readdirSync(dir, { withFileTypes: true }); } catch { return; }
+    for (const e of entries) {
+      const full = join(dir, e.name);
+      if (e.isDirectory()) { if (!/^(retired|issues|node_modules)$/i.test(e.name)) walkDocs(full); }
+      else if (/\.md$/i.test(e.name)) out.push(relative(root, full).split(sep).join('/'));
+    }
+  };
+  walkDocs(join(root, 'docs'));
+  return out;
+};
 
 // Returns [] when the ADR is fit to be indexed; otherwise the reasons it is not.
 export const validate = (fields, root) => {
@@ -179,6 +208,34 @@ export const sweep = (root) => {
     }
   }
 
+  // A retired decision named in prose resolves to nothing. `docs/adr/retired/` is out of the
+  // read path, so whoever follows the pointer finds an empty hand -- while the sentence around
+  // it still reads as present-tense fact. The frontmatter gate structurally cannot see this:
+  // `supersedes`/`status` link the two ADRs to each other and say nothing about the twenty
+  // documents that still name the old one. A retirement has three ends, not two.
+  //
+  // No exemption list, by construction: a retired id may be named freely, as long as the
+  // paragraph naming it also says it is gone. Clearing a red means writing the truth, never
+  // registering a file -- which is what makes this safe to run as a gate rather than a report.
+  for (const rel of docPages(root)) {
+    let text = '';
+    try { text = readFileSync(join(root, rel), 'utf8'); } catch { continue; }
+    const seen = new Set();
+    for (const para of text.split(/\r?\n[ \t]*\r?\n/)) {
+      if (SAYS_GONE.test(para)) continue;
+      for (const m of para.matchAll(CITES_ADR)) {
+        const id = m[1] || m[2];
+        const t = byId.get(id);
+        if (t && String(t.fields.status) === 'in-force') continue;
+        if (seen.has(id)) continue;
+        seen.add(id);
+        problems.push(t
+          ? `${rel} — names ADR ${id}, which is ${t.fields.status}, in a paragraph that does not say so`
+          : `${rel} — names ADR ${id}, which is not an in-force ADR here (retired, or never written); say that in the same paragraph, or drop the claim`);
+      }
+    }
+  }
+
   // Not a gate: a repo-wide decision legitimately claims a repo-wide path. It is still
   // worth naming, because one over-broad applies-to puts itself back into every prompt.
   const inForce = ok.filter((a) => String(a.fields.status) === 'in-force');
@@ -226,7 +283,24 @@ const runHook = () => {
   let payload;
   try { payload = JSON.parse(readFileSync(0, 'utf8')); } catch { return 0; }
   const written = payload?.tool_input?.file_path;
-  if (!written) return 0;
+  if (!written) {
+    // A Bash/PowerShell write carries no `file_path`, so this gate structurally cannot see the
+    // file it wrote -- and bypass-permissions mode actively instructs agents to write with
+    // heredocs and `sed` rather than Write/Edit. Proven 2026-09-02: the same invalid ADR was
+    // blocked through Write and passed silently through `cat > docs/adr/0099-x.md <<EOF`.
+    // When the command names the ADR dir, run the full sweep rather than guess a filename.
+    // ponytail: matches the literal path in the command text; a path assembled at runtime
+    // still slips through to the dispatch sweep, which stays the backstop.
+    const cmd = String(payload?.tool_input?.command ?? '');
+    if (!/docs[/\\]adr/i.test(cmd)) return 0;
+    const { problems } = sweep(repoRoot(payload?.cwd || process.cwd()));
+    if (!problems.length) return 0;
+    process.stderr.write(
+      `adr-index: that command wrote under ${ADR_POSIX}/, and the record now has ` +
+      `${problems.length} problem(s):\n` + problems.map((p) => `  - ${p}`).join('\n') + '\n' +
+      `Fix the record, or move the ADR to ${ADR_POSIX}/retired/. Do not write around it.\n`);
+    return 2;
+  }
   const path = norm(written);
   if (!path.includes(`${ADR_POSIX}/`) || !/\.md$/i.test(path)) return 0;
   if (/\/(retired|README|INDEX)/i.test(path)) return 0;
