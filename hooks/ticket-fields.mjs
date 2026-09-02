@@ -33,7 +33,13 @@ if (problems.length) {
 }
 if (warnings.length) process.stderr.write(`adr-sweep: ${warnings.map((w) => `\n  (warning) ${w}`).join('')}\n`);
 
-const named = (payload?.tool_input?.prompt ?? '').match(/[\w./\\-]*docs[/\\]issues[/\\][\w./\\-]+\.md/);
+// The leading `[A-Za-z]:` and the `~` are not decoration. A Windows absolute path carries a
+// drive colon, and a temp or profile dir can carry an 8.3 short name (`RUNNER~1`); neither is a
+// word character, so the old class started matching *after* them and handed back a path with its
+// head bitten off -- `1\AppData\...\ticket.md`. That path then resolved against cwd, which
+// silently produced the right file whenever the drives happened to agree, and a "ticket does not
+// exist" rejection whenever they did not.
+const named = (payload?.tool_input?.prompt ?? '').match(/(?:[A-Za-z]:)?[\w./\\~-]*docs[/\\]issues[/\\][\w./\\-]+\.md/);
 if (!named) process.exit(0);          // no ticket named: nothing this gate can judge
 
 let body;

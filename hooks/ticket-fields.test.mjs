@@ -16,6 +16,9 @@ const run = (prompt) => spawnSync(process.execPath, [hook], {
 const expect = (r, code, name) => {
   if (r.status !== code) throw new Error(`${name}: expected ${code}, got ${r.status}: ${r.stderr}`);
 };
+const contains = (haystack, needle, name) => {
+  if (!haystack.includes(needle)) throw new Error(`${name}: expected "${needle}" in:\n${haystack}`);
+};
 
 const FULL = [
   '# T1 — tracer',
@@ -43,6 +46,15 @@ try {
   write(FULL);
   expect(run(`Ticket: ${rel}\n<container-contract verbatim>`), 0, 'three filled fields dispatch');
   expect(run(`Ticket: ${join(root, rel)}`), 0, 'absolute ticket path also resolves');
+
+  // A drive colon and an 8.3 `~` are not word characters. The matcher used to start after
+  // them and report a path with its head bitten off, which resolved against cwd -- right file
+  // when the drives agreed, "ticket does not exist" when they did not. This only ever showed
+  // up on a runner whose temp dir is C:\Users\RUNNER~1\..., never on a developer machine.
+  const winish = 'C:\\Users\\RUNNER~1\\AppData\\Local\\Temp\\t\\docs\\issues\\T1\\ticket.md';
+  const bitten = run(`Ticket: ${winish}`);
+  expect(bitten, 2, 'a ticket path that does not exist is red');
+  contains(bitten.stderr, winish, 'the whole path survives the matcher, drive letter and ~ included');
 
   // prove red, one field at a time
   write(FULL.replace('`app/schedule/creative.py`', ''));
