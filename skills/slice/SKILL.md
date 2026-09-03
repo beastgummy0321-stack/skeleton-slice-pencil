@@ -60,7 +60,8 @@ UNKNOWN 收錄門檻（防規劃無限延長）：只收不可逆表命中、或
 線外細節不列 UNKNOWN，實作時 agent 自決＋標 `ponytail:` 註解。
 每題過四格路由（同 /skeleton 溝通契約）：使用者不確定 → 先探路
 （agent 讀 code＋查同類產品 → 2–4 選項＋取捨＋推薦）再問，禁追問第三次。
-關卡：UNKNOWN 清空 →（有動 schema 才凍結＋commit `slice-NN: schema frozen`）→ 開票 `docs/issues/<slug>/ticket.md`，三欄照 workflow.md「Spec before dispatch」；答不出的欄位升級，不得填空。
+關卡：UNKNOWN 清空 →（有動 schema 才凍結＋commit `slice-NN: schema frozen`）→ **全名掃描** → 開票 `docs/issues/<slug>/ticket.md`，三欄照 workflow.md「Spec before dispatch」；答不出的欄位升級，不得填空。
+**開票前一步是掃描，不是回想。** 這片會「不再存在或改變意思」的每一個名字——表、欄位、函式、檔名、常數——各跑一次**不限目錄、不限副檔名**的全 repo 搜尋，命中清單原樣貼成 `## Shared files touched`（規則與實測見 workflow.md「Spec before dispatch」）。掃**會變的那個名字**，不是它所屬的東西。
 **開票最後一步：在票上寫 `## Contradiction check`**——哪兩條 done-check 可能互相矛盾、什麼輸入會戳破。
 機器閘門只看欄位有沒有填，不看填的東西彼此相不相容；實測一張同時要求
 「金額不變」與「每人等額」、矩陣含 (100, 3) 的票通過了全部閘門，燒掉三輪 agent 才證明 3 除不盡 100。
