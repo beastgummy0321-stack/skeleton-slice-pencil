@@ -9,7 +9,10 @@ import { execFileSync } from 'node:child_process';
 import { sweep } from './adr-index.mjs';
 
 let payload;
-try { payload = JSON.parse(readFileSync(0, 'utf8')); } catch { process.exit(0); }
+try { payload = JSON.parse(readFileSync(0, 'utf8')); } catch {
+  process.stderr.write('ticket-fields: the hook payload is not JSON; a gate that cannot read its input does not pass it.\n');
+  process.exit(2);
+}
 if (payload?.tool_name !== 'Agent') process.exit(0);
 
 const cwd = payload?.cwd || process.cwd();
@@ -58,8 +61,25 @@ if (!model && (subagentType === '' || REQUIRES_EXPLICIT_MODEL.has(subagentType))
 // head bitten off -- `1\AppData\...\ticket.md`. That path then resolved against cwd, which
 // silently produced the right file whenever the drives happened to agree, and a "ticket does not
 // exist" rejection whenever they did not.
-const named = (payload?.tool_input?.prompt ?? '').match(/(?:[A-Za-z]:)?[\w./\\~-]*docs[/\\]issues[/\\][\w./\\-]+\.md/);
-if (!named) process.exit(0);          // no ticket named: nothing this gate can judge
+// Every post is named (workflow.md, "Who does what"). A general-purpose dispatch either names the
+// ticket it implements or reviews -- at docs/issues/<slug>/, nowhere else -- or opens with the post
+// it holds. Measured: a ticket parked at .scratch/t/ticket.md, and an opus "implement the binding
+// feature" prompt with no ticket at all, both walked through this gate without a word.
+const DECLARED_POST = /^(ROOT CAUSE \(second red\)|PLAN REVIEW|LOG TRIAGE|QUOTE|WALK|PROTOTYPE PAGE|READ-ONLY|REVIEW \(route C\))\s*:/m;
+const prompt = payload?.tool_input?.prompt ?? '';
+const strayTicket = prompt.match(/(?:[A-Za-z]:)?[\w./\\~-]*[/\\][\w-]+[/\\]ticket\.md/g)?.find((m) => !/docs[/\\]issues[/\\]/.test(m));
+if (strayTicket && (subagentType === '' || REQUIRES_EXPLICIT_MODEL.has(subagentType))) {
+  process.stderr.write(`ticket-fields: the dispatch names ${strayTicket}, which is not under docs/issues/<slug>/. Tickets live there and nowhere else, because that is the only path this gate reads.\n`);
+  process.exit(2);
+}
+const named = prompt.match(/(?:[A-Za-z]:)?[\w./\\~-]*docs[/\\]issues[/\\][\w./\\-]+\.md/);
+if (!named) {
+  if ((subagentType === '' || REQUIRES_EXPLICIT_MODEL.has(subagentType)) && !DECLARED_POST.test(prompt)) {
+    process.stderr.write('ticket-fields: this general-purpose dispatch names no docs/issues/<slug>/ticket.md and declares no post. Open the prompt with the post it holds -- "LOG TRIAGE:", "QUOTE:", "WALK:", "PROTOTYPE PAGE:", "READ-ONLY:", "PLAN REVIEW:", "ROOT CAUSE (second red):", "REVIEW (route C):" -- or name the ticket. An unnamed dispatch is the one nobody budgeted.\n');
+    process.exit(2);
+  }
+  process.exit(0);
+}
 
 // Opus and Fable have posts, and none of them names a ticket file: architecture, the second-red
 // root cause, plan review. The two that legitimately read a ticket declare themselves, so that an
@@ -78,7 +98,7 @@ if (/^(opus|fable)/.test(model) && !DECLARED_EXPENSIVE_POST.test(payload?.tool_i
 let body;
 try { body = readFileSync(resolve(payload?.cwd || process.cwd(), named[0]), 'utf8'); }
 catch {
-  process.stderr.write(`ticket-fields: the dispatch names ${named[0]}, which does not exist.\n`);
+  process.stderr.write(`ticket-fields: the dispatch names ${named[0]}, which does not exist. A relative path resolves against the session cwd, not the agent's working directory -- name the ticket by absolute path, or dispatch from the repo root.\n`);
   process.exit(2);
 }
 

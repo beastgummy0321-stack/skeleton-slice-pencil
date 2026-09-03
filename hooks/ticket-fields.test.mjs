@@ -47,8 +47,13 @@ try {
   mkdirSync(join(root, 'docs/issues/T1-tracer'), { recursive: true });
 
   // the gate only judges a dispatch that names a ticket
-  expect(run('do the thing'), 0, 'no ticket named: passes through');
+  // v5.7 contract: every general-purpose post is named -- a ticket under docs/issues/, or a declared post prefix.
+  expect(run('do the thing'), 2, 'no ticket named, no post declared: blocked');
+  expect(run('LOG TRIAGE: read ci.log'), 0, 'declared post, no ticket: passes');
+  expect(run('implement .scratch/x/ticket.md'), 2, 'ticket outside docs/issues: blocked');
   expect(run(`read ${rel}`), 2, 'named ticket that does not exist');
+  // A gate that cannot parse its input fails closed; exit 0 on garbage was how a broken payload dispatched anything.
+  expect(spawnSync(process.execPath, [hook], { input: '{not json', encoding: 'utf8' }), 2, 'malformed payload: blocked');
 
   write(FULL);
   expect(run(`Ticket: ${rel}\n<container-contract verbatim>`), 0, 'three filled fields dispatch');
