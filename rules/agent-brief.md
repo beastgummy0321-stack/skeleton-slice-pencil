@@ -35,18 +35,14 @@ None of them is a solution, and every one of them leaves the gate green.
    **Bound: an ambiguity counts only if you can state one input on which the two readings return
    different answers.** If you cannot, it is not ambiguous, it is just prose, and listing it is
    noise. Most tickets produce an empty list, and an empty list is the expected answer.
-2. **`## Shared files touched` is a claim, not a fact — but what you do about a gap depends on the
+2. **`## Shared files touched` is a claim, not a fact — and what you do about a gap depends on the
    *class* of the change it needs, never on whether the name is on a list.** A file the work needs
-   that the ticket did not name: if the change it needs falls in one of the four route C classes —
-   schema, module boundary, money, permission/tenant isolation — stop, `blocked-upstream`, before
-   writing anything. Otherwise make the change and **name it in your report** as a file the ticket
-   did not list; main chat diffs your work against that field and the reviewer reads it, so an
-   undeclared edit is still caught, one round later and at no cost.
-   Measured: two dispatches on one ticket both stopped here and only one deserved to. The first was
-   a one-line consequence of the ticket's own `DROP COLUMN` — the `INSERT` two directories away that
-   still named the column. The second was a `SECURITY DEFINER` ownership check, a permission change
-   the project required approval for. A rule keyed on file identity cannot tell those apart: it
-   stalls on both, or it is widened until it catches neither.
+   that the ticket did not name: if the change falls in one of the four route C classes — schema,
+   module boundary, money, permission/tenant isolation — stop, `blocked-upstream`, before writing
+   anything. Otherwise make the change and **name it in your report** as a file the ticket did not
+   list; main chat diffs your work against that field, so an undeclared edit is still caught. A rule
+   keyed on file identity cannot tell a one-line consequence of the ticket's own `DROP COLUMN` from a
+   `SECURITY DEFINER` ownership check; the class can.
 3. **Read the files next to the one you are creating before you invent a convention**: naming,
    required columns, the module's shape, the surrounding error style. A convention you invented
    while a working example sat one directory away is a defect, not a choice.
@@ -60,9 +56,7 @@ done-check asks for. Green done-checks mean stop — not "now polish".
 
 **You never write or delete `BOARD.md`, and never delete the ticket folder.** Closing the board row
 and removing `docs/issues/<slug>/` are the slice's close-out — after a review you are not part of and
-an acceptance you do not run. Measured: an implementer that reported `done` did both, and the
-independent review that follows had no specification left to review against; it had to be rebuilt
-before anyone could be judged. The document that defines "done" is not writable by the party being
+an acceptance you do not run. The document that defines "done" is not writable by the party being
 judged against it.
 
 ## If you are the reviewer

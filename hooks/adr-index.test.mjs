@@ -151,12 +151,8 @@ try {
   rmSync(join(root, 'docs', 'adr', '0058-short.md'));
   rmSync(join(root, 'app', 'l'), { recursive: true });
 
-  // ---- S5: over-broad applies-to warns, never blocks ---------------------------
+  // storage ADRs, so the index filter below has something to drop
   for (const id of ['0060', '0061', '0062']) adr(`${id}-x.md`, variant(id, `Decision ${id}`, 'app/storage/'));
-  adr('0063-broad.md', variant('0063', 'Everything must be typed', 'app/'));
-  noProblems('an over-broad applies-to is never a blocker');
-  if (!warnings().some((w) => w.includes('0063'))) throw new Error('an over-broad applies-to should warn');
-  rmSync(join(root, 'docs', 'adr', '0063-broad.md'));
 
   // ---- S9: an in-force page still naming a decision retired under it ----------
   // `docs/adr/retired/0001-old.md` was moved out of the read path far above; every doc that
@@ -181,18 +177,6 @@ try {
   writeFileSync(join(root, 'docs', 'contracts', 'queue.md'), '# queue\n\n## decisions in force\n\n- 0042\n');
   writeFileSync(ctx, '# no frontmatter here\n');
   noProblems('restored');
-
-  // ---- S10: written by Bash, which carries no file_path at all -----------------
-  const onBash = (command) => spawnSync(process.execPath, [hook, '--hook'], {
-    input: JSON.stringify({ cwd: root, tool_name: 'Bash', tool_input: { command } }),
-    encoding: 'utf8',
-  });
-  writeFileSync(join(root, 'docs', 'adr', '0064-bash.md'), '# no frontmatter at all\n');
-  expect(onBash('cat > docs/adr/0064-bash.md <<EOF'), 2, 'a Bash write naming the ADR dir runs the full sweep');
-  contains(onBash('cat > docs/adr/0064-bash.md <<EOF').stderr, '0064-bash.md', 'and names what it found');
-  expect(onBash('npm test'), 0, 'a command that never names the ADR dir is left to the dispatch sweep');
-  rmSync(join(root, 'docs', 'adr', '0064-bash.md'));
-  expect(onBash('sed -i s/x/y/ docs/adr/0042-queue.md'), 0, 'a clean record does not block');
 
   // ---- the index itself still works -------------------------------------------
   const queueOnly = cli('app/queue/');

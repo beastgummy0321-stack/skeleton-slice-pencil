@@ -32,17 +32,16 @@ claude plugin install skeleton-slice-pencil@skeleton-slice-pencil
 | `skills/slice/` | 日常入口：分流（快改／三站切片：補問凍結→做後端→換真線＋拔根測試）、斷點續跑 |
 | `skills/container-contract/` | 集裝箱憲章觸發器 |
 | `skills/setup-workflow/` | 外部依賴安裝精靈 |
-| `rules/` | 規範本體（英文，注入約 160 行）：workflow（分工＋交件閘＋退件上限）、reuse-first、container-contract（模組邊界）、screen-contract（畫面契約） |
-| `hooks/session-rules.mjs` | SessionStart 把 workflow／reuse-first 注入每個 session |
-| `hooks/load-budget.mjs` | PostToolUse 規範檔閘門：CLAUDE.md／AGENTS.md 及 @ 引用檔合計 500 行上限 |
-| `hooks/adr-index.mjs` | 三模式。PostToolUse 閘門：`docs/adr/` 下的 ADR 必須帶 `id`／`decision`（裁決本身，一句、≤120 字）／`applies-to`／`supersedes`（取代誰，或 `none`）／`status` 前置資料；ADR 內文長度不限。CLI：`node hooks/adr-index.mjs <path…>` 即時算出該路徑適用的 ADR 索引行（沒有索引檔，不會漂）。`sweep()` 給派工閘用 |
-| `hooks/ticket-fields.mjs` | PreToolUse 派工閘：每個 general-purpose 派工都要報名——提示裡有 `docs/issues/<slug>/…md` 的票，或開頭宣告崗位（`LOG TRIAGE:`／`QUOTE:`／`WALK:`／`PROTOTYPE PAGE:`／`READ-ONLY:`／`PLAN REVIEW:`／`ROOT CAUSE (second red):`／`REVIEW (route C):`）；票只能住 `docs/issues/`；壞 payload 不放行。票的三欄要填滿，**並且**整份決策紀錄要掃過一遍——Bash 寫進來的 ADR、改名後失效的 `applies-to`、重複 id、放深一層的檔、合約頁引用已死的 id，都擋在派工當下 |
+| `rules/` | 規範本體（英文）：preamble＋workflow＋reuse-first 每 session 注入（約 20 KB，橫幅最後一行印實際大小）；container-contract（模組邊界）、screen-contract（畫面契約）按需載入；agent-brief 隨每張派工單 |
+| `hooks/session-rules.mjs` | SessionStart 注入上列三檔 |
+| `hooks/adr-index.mjs` | Write／Edit 到 `docs/adr/` 時檢查前置資料（`id`／`decision` ≤120 字／`applies-to`／`supersedes`／`status`）；CLI `node hooks/adr-index.mjs <path…>` 即時算出該路徑適用的索引行（沒有索引檔，不會漂）；`sweep()` 給派工閘用 |
+| `hooks/ticket-fields.mjs` | PreToolUse 派工閘：general-purpose 派工要嘛指名 `docs/issues/<slug>/…md` 的票（四欄填滿），要嘛開頭用大寫宣告崗位（`LOG TRIAGE:` 之類，崗位清單在 workflow.md）；要帶 `model`；opus／fable 不准接票；壞 payload 不放行。派工前掃整份決策紀錄——Bash 寫進來的 ADR、改名後失效的 `applies-to`、重複 id、單邊退休、正文提到已退休 ADR 卻沒說，都擋在派工當下 |
 
 ## 外部依賴（/setup-workflow 代裝，先問過你）
 
 - [DietrichGebert/ponytail](https://github.com/DietrichGebert/ponytail)：最小實作紀律
 - [ayghri/i-have-adhd](https://github.com/ayghri/i-have-adhd)：輸出格式紀律
-- [mattpocock/skills](https://github.com/mattpocock/skills)（官方 marketplace `mattpocock-skills`）：grilling、to-tickets、tdd、domain-modeling、wizard、research、to-questionnaire
+- [mattpocock/skills](https://github.com/mattpocock/skills)（官方 marketplace `mattpocock-skills`）：grilling、tdd、domain-modeling、wizard、research（to-spec／to-tickets／to-questionnaire 是使用者手打的指令，模型叫不到，規範不再依賴它們）
 
 選配（有裝就用，沒裝跳過）：[leonxlnx/taste-skill](https://github.com/leonxlnx/taste-skill)、[pbakaus/impeccable](https://github.com/pbakaus/impeccable)、
 [nextlevelbuilder/ui-ux-pro-max-skill](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill)：前端生成與打磨、
@@ -80,6 +79,6 @@ claude plugin install skeleton-slice-pencil@skeleton-slice-pencil
 Pencil 路線都已刪除：那是為單一設計工具寫的規範，只服務一種場景。要回頭看用 `git log`。
 plugin 名字暫時保留 `skeleton-slice-pencil`——改名會逼所有安裝過的人重裝，不值得。
 
-`skills/skeleton/SKILL.md` 第 4 節有原型天花板、原型模式三選一、文案分桶；
+`skills/skeleton/SKILL.md` 第 4 節有原型天花板、風格錨、文案分桶；
 `skills/slice/SKILL.md` 第 2 節分流表含「新畫面或新狀態」；`skills/setup-workflow/SKILL.md` 有 Frontend Pack；
 `rules/screen-contract.md` 第二節有風格錨與 tracer 例外。

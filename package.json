@@ -1,8 +1,8 @@
 {
   "name": "skeleton-slice-pencil",
-  "version": "5.8.0",
+  "version": "6.0.0",
   "private": true,
   "scripts": {
-    "test": "node hooks/budget.test.mjs && node hooks/adr-index.test.mjs && node hooks/ticket-fields.test.mjs"
+    "test": "node hooks/adr-index.test.mjs && node hooks/ticket-fields.test.mjs"
   }
 }

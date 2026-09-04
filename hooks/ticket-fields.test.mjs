@@ -50,6 +50,8 @@ try {
   // v5.7 contract: every general-purpose post is named -- a ticket under docs/issues/, or a declared post prefix.
   expect(run('do the thing'), 2, 'no ticket named, no post declared: blocked');
   expect(run('LOG TRIAGE: read ci.log'), 0, 'declared post, no ticket: passes');
+  expect(run('SPIKE: is the lock held'), 0, 'any post named in capitals passes -- the list lives in workflow.md, not here');
+  expect(run('Ticket: none, just look'), 2, 'a Capitalised word is not a post name');
   expect(run('implement .scratch/x/ticket.md'), 2, 'ticket outside docs/issues: blocked');
   expect(run(`read ${rel}`), 2, 'named ticket that does not exist');
   // A gate that cannot parse its input fails closed; exit 0 on garbage was how a broken payload dispatched anything.

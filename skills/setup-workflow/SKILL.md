@@ -10,7 +10,7 @@ disable-model-invocation: true
 
 逐項檢查並列結果表（項目｜狀態｜影響）：
 
-1. `node --version`——本 plugin 的 hooks 依賴 node；查無 → 規範注入與規範檔閘門失效，skill 本體仍可用
+1. `node --version`——本 plugin 的 hooks 依賴 node；查無 → 規範注入與派工閘門失效，skill 本體仍可用
 2. `claude plugin list` 含 `ponytail`、`i-have-adhd`、`mattpocock-skills` 與否
 3. Frontend Pack（有前端才需要）：`claude plugin list` 含 `ui-ux-pro-max`、`taste-skill`、`impeccable` 與否；
    `~/.claude/skills/humanizer-zh-tw/SKILL.md` 存在與否。查無 → /skeleton 第 4 節「缺件降級」條款生效

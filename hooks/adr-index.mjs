@@ -4,16 +4,13 @@
 // stands for the skill. Bodies are read only when the filter names them.
 //
 // Three modes, one file:
-//   hook (`--hook`, stdin JSON, PostToolUse) -- fast feedback while an ADR is being written.
+//   hook (`--hook`, stdin JSON, PostToolUse on Write/Edit) -- fast feedback on the one ADR
+//        being written.
 //   CLI  (`node adr-index.mjs [path|module ...]`) -- prints the index rows that match,
 //        computed from the frontmatter every time. There is no index file to drift.
-//   sweep(root) -- imported by the dispatch gate, and run by the hook itself whenever a
-//        Bash/PowerShell command names the ADR dir. The write-time hook otherwise sees only a
-//        Write/Edit to one file, so everything arriving another way (a rename that strands an
-//        applies-to, a second file claiming the same id, an in-force page still citing a
-//        decision that was retired under it) walks straight past it. The sweep reads every ADR
-//        on disk, however it got there, and runs at both moments a stale decision does damage:
-//        writing it, and dispatching an agent onto it.
+//   sweep(root) -- imported by the dispatch gate: reads every ADR on disk however it got
+//        there (Bash heredoc, rename, duplicate id, one-sided retirement, a page naming a
+//        retired ADR), and blocks the dispatch it would have poisoned.
 import { readFileSync, readdirSync, existsSync, statSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -236,15 +233,6 @@ export const sweep = (root) => {
     }
   }
 
-  // Not a gate: a repo-wide decision legitimately claims a repo-wide path. It is still
-  // worth naming, because one over-broad applies-to puts itself back into every prompt.
-  const inForce = ok.filter((a) => String(a.fields.status) === 'in-force');
-  for (const a of inForce) {
-    const hit = inForce.filter((b) => b !== a && overlaps(list(a.fields['applies-to']), list(b.fields['applies-to']))).length;
-    if (inForce.length > 4 && hit > inForce.length / 2) {
-      warnings.push(`${a.file} — applies-to [${list(a.fields['applies-to']).join(' ')}] overlaps ${hit} of ${inForce.length - 1} other in-force ADRs; it will ride along in nearly every dispatch prompt`);
-    }
-  }
   return { problems, warnings };
 };
 
@@ -283,24 +271,7 @@ const runHook = () => {
   let payload;
   try { payload = JSON.parse(readFileSync(0, 'utf8')); } catch { return 0; }
   const written = payload?.tool_input?.file_path;
-  if (!written) {
-    // A Bash/PowerShell write carries no `file_path`, so this gate structurally cannot see the
-    // file it wrote -- and bypass-permissions mode actively instructs agents to write with
-    // heredocs and `sed` rather than Write/Edit. Proven 2026-09-02: the same invalid ADR was
-    // blocked through Write and passed silently through `cat > docs/adr/0099-x.md <<EOF`.
-    // When the command names the ADR dir, run the full sweep rather than guess a filename.
-    // ponytail: matches the literal path in the command text; a path assembled at runtime
-    // still slips through to the dispatch sweep, which stays the backstop.
-    const cmd = String(payload?.tool_input?.command ?? '');
-    if (!/docs[/\\]adr/i.test(cmd)) return 0;
-    const { problems } = sweep(repoRoot(payload?.cwd || process.cwd()));
-    if (!problems.length) return 0;
-    process.stderr.write(
-      `adr-index: that command wrote under ${ADR_POSIX}/, and the record now has ` +
-      `${problems.length} problem(s):\n` + problems.map((p) => `  - ${p}`).join('\n') + '\n' +
-      `Fix the record, or move the ADR to ${ADR_POSIX}/retired/. Do not write around it.\n`);
-    return 2;
-  }
+  if (!written) return 0;
   const path = norm(written);
   if (!path.includes(`${ADR_POSIX}/`) || !/\.md$/i.test(path)) return 0;
   if (/\/(retired|README|INDEX)/i.test(path)) return 0;

@@ -55,17 +55,12 @@ if (!model && (subagentType === '' || REQUIRES_EXPLICIT_MODEL.has(subagentType))
   process.exit(2);
 }
 
-// The leading `[A-Za-z]:` and the `~` are not decoration. A Windows absolute path carries a
-// drive colon, and a temp or profile dir can carry an 8.3 short name (`RUNNER~1`); neither is a
-// word character, so the old class started matching *after* them and handed back a path with its
-// head bitten off -- `1\AppData\...\ticket.md`. That path then resolved against cwd, which
-// silently produced the right file whenever the drives happened to agree, and a "ticket does not
-// exist" rejection whenever they did not.
-// Every post is named (workflow.md, "Who does what"). A general-purpose dispatch either names the
-// ticket it implements or reviews -- at docs/issues/<slug>/, nowhere else -- or opens with the post
-// it holds. Measured: a ticket parked at .scratch/t/ticket.md, and an opus "implement the binding
-// feature" prompt with no ticket at all, both walked through this gate without a word.
-const DECLARED_POST = /^(ROOT CAUSE \(second red\)|PLAN REVIEW|LOG TRIAGE|QUOTE|WALK|PROTOTYPE PAGE|READ-ONLY|REVIEW \(route C\))\s*:/m;
+// The leading `[A-Za-z]:` and `~` keep a Windows absolute path (drive colon, 8.3 short name) whole.
+// Every post is named (workflow.md): a general-purpose dispatch names its ticket at docs/issues/<slug>/
+// -- nowhere else -- or opens with the post it holds.
+// A post is any prompt that opens with its name in capitals (`LOG TRIAGE:`, `ROOT CAUSE (second red):`).
+// workflow.md lists the posts; this gate only holds that one was named.
+const DECLARED_POST = /^[A-Z]{2}[^\n:]{0,40}:/m;
 const prompt = payload?.tool_input?.prompt ?? '';
 const strayTicket = prompt.match(/(?:[A-Za-z]:)?[\w./\\~-]*[/\\][\w-]+[/\\]ticket\.md/g)?.find((m) => !/docs[/\\]issues[/\\]/.test(m));
 if (strayTicket && (subagentType === '' || REQUIRES_EXPLICIT_MODEL.has(subagentType))) {
@@ -75,7 +70,7 @@ if (strayTicket && (subagentType === '' || REQUIRES_EXPLICIT_MODEL.has(subagentT
 const named = prompt.match(/(?:[A-Za-z]:)?[\w./\\~-]*docs[/\\]issues[/\\][\w./\\-]+\.md/);
 if (!named) {
   if ((subagentType === '' || REQUIRES_EXPLICIT_MODEL.has(subagentType)) && !DECLARED_POST.test(prompt)) {
-    process.stderr.write('ticket-fields: this general-purpose dispatch names no docs/issues/<slug>/ticket.md and declares no post. Open the prompt with the post it holds -- "LOG TRIAGE:", "QUOTE:", "WALK:", "PROTOTYPE PAGE:", "READ-ONLY:", "PLAN REVIEW:", "ROOT CAUSE (second red):", "REVIEW (route C):" -- or name the ticket. An unnamed dispatch is the one nobody budgeted.\n');
+    process.stderr.write('ticket-fields: this general-purpose dispatch names no docs/issues/<slug>/ticket.md and declares no post. Open the prompt with the post it holds, in capitals (workflow.md "Who does what": LOG TRIAGE:, QUOTE:, WALK:, PROTOTYPE PAGE:, READ-ONLY:, PLAN REVIEW:, ROOT CAUSE (second red):, REVIEW (route C):), or name the ticket. An unnamed dispatch is the one nobody budgeted.\n');
     process.exit(2);
   }
   process.exit(0);
