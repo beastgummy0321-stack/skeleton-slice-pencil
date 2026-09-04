@@ -141,6 +141,17 @@ try {
   if (!warnings().some((w) => w.includes('0055'))) throw new Error('citing a superseded ADR should warn');
   writeFileSync(join(root, 'docs', 'contracts', 'queue.md'), '# queue\n\n## decisions in force\n\n- 0042\n');
 
+  // A date in that section is not a citation. Scanning every `\d{4}` read `amended
+  // 2026-09-04` as ADR 2026 and hard-blocked every dispatch in a live repo until the
+  // date was deleted off the page -- a gate that demands a lie to go green.
+  writeFileSync(join(root, 'docs', 'contracts', 'queue.md'), '# queue\n\n## decisions in force\n\n- 0042\n\nModule-local: how a thing is matched -- amended 2026-09-04, overturning 2026-09-03.\n');
+  noProblems('a date in the decisions section is not a citation');
+  writeFileSync(join(root, 'docs', 'contracts', 'queue.md'), '# queue\n\n## decisions in force\n\n- 0042\n- 2026-09-04 -- recorded by date, not by id\n');
+  noProblems('a list item opening with a date is not a citation either');
+  writeFileSync(join(root, 'docs', 'contracts', 'queue.md'), '# queue\n\n## decisions in force\n\n- 0042\n- ADR 0099 -- never written\n');
+  oneProblem('cites ADR 0099', 'the `ADR 0099` spelling is still caught, not only the bare id');
+  writeFileSync(join(root, 'docs', 'contracts', 'queue.md'), '# queue\n\n## decisions in force\n\n- 0042\n');
+
   // ---- S6: the matcher is segment-wise ----------------------------------------
   if (overlaps(['app/l'], ['app/llm/gateway.py'])) throw new Error('app/l must not match app/llm/');
   if (!overlaps(['app/queue/'], ['app/queue/worker.py'])) throw new Error('a dir must match a file inside it');

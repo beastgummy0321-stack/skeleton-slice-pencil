@@ -198,7 +198,17 @@ export const sweep = (root) => {
     let text = '';
     try { text = readFileSync(join(cdir, page), 'utf8'); } catch { continue; }
     const section = text.match(/decisions in force[^\n]*\n?([\s\S]*?)(?=\n#|$)/i);
-    for (const id of new Set((section ? section[0] : '').match(/\b\d{4}\b/g) ?? [])) {
+    const body = section ? section[0] : '';
+    // Two shapes are a citation here; a bare four-digit number in prose is neither.
+    // `ADR 0042` anywhere, and a bare `0042` opening a list item -- the "ADR ids only,
+    // never their prose" style container-contract §1 asks for. Scanning every `\d{4}`
+    // read `amended 2026-09-04` as a citation of ADR 2026 and hard-blocked every
+    // dispatch in that repo until the date was deleted off the page: the gate demanded
+    // a lie to go green, which is the one thing a gate may never do.
+    const cited = new Set();
+    for (const m of body.matchAll(CITES_ADR)) cited.add(m[1] || m[2]);
+    for (const m of body.matchAll(/^[ \t]*(?:[-*+]|\d+\.)[ \t]+(\d{4})(?!-\d)\b/gm)) cited.add(m[1]);
+    for (const id of cited) {
       const t = byId.get(id);
       if (!t) problems.push(`docs/contracts/${page} — cites ADR ${id}, which is not an in-force ADR`);
       else if (String(t.fields.status) !== 'in-force') warnings.push(`docs/contracts/${page} — cites ADR ${id}, which is ${t.fields.status}`);

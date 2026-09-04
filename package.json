@@ -1,6 +1,6 @@
 {
   "name": "skeleton-slice-pencil",
-  "version": "6.1.0",
+  "version": "6.1.1",
   "private": true,
   "scripts": {
     "test": "node hooks/adr-index.test.mjs && node hooks/ticket-fields.test.mjs && node hooks/board-shape.test.mjs"
