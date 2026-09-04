@@ -35,6 +35,7 @@ claude plugin install skeleton-slice-pencil@skeleton-slice-pencil
 | `rules/` | 規範本體（英文）：preamble＋workflow＋reuse-first 每 session 注入（約 20 KB，橫幅最後一行印實際大小）；container-contract（模組邊界）、screen-contract（畫面契約）按需載入；agent-brief 隨每張派工單 |
 | `hooks/session-rules.mjs` | SessionStart 注入上列三檔 |
 | `hooks/adr-index.mjs` | Write／Edit 到 `docs/adr/` 時檢查前置資料（`id`／`decision` ≤120 字／`applies-to`／`supersedes`／`status`）；CLI `node hooks/adr-index.mjs <path…>` 即時算出該路徑適用的索引行（沒有索引檔，不會漂）；`sweep()` 給派工閘用 |
+| `hooks/board-shape.mjs` | PostToolUse（Write／Edit）＋派工時：`BOARD.md` 只准是標題、`> ` 指標行、一行一個目標（≤9 行、≤200 字、指名 `docs/issues/<目標>/`）；節標題、段落、縮排續行、量到的事實一律紅。對 449 行的真看板量出 388 處紅 |
 | `hooks/ticket-fields.mjs` | PreToolUse 派工閘：general-purpose 派工要嘛指名 `docs/issues/<slug>/…md` 的票（四欄填滿），要嘛開頭用大寫宣告崗位（`LOG TRIAGE:` 之類，崗位清單在 workflow.md）；要帶 `model`；opus／fable 不准接票；壞 payload 不放行。派工前掃整份決策紀錄——Bash 寫進來的 ADR、改名後失效的 `applies-to`、重複 id、單邊退休、正文提到已退休 ADR 卻沒說，都擋在派工當下 |
 
 ## 外部依賴（/setup-workflow 代裝，先問過你）
@@ -61,13 +62,13 @@ claude plugin install skeleton-slice-pencil@skeleton-slice-pencil
   Gate A：憲法（≤20 行）＋模組圖（含判讀歸屬）＋借鑑清單＋stack 按最終商業形態定 → 使用者簽字
   地基：stack＋模組軌道＋depcruise 證紅＋冒煙證紅（靜默，安裝先點頭）
   原型：風格錨 1 頁挑 1 版 → 每頁一個 subagent 平行生成 → 全站可點、四態可切
-  交付：BOARD.md 寫滿 [ ]，逐片等 /slice 換真線。原型階段加刪功能免費。
+  交付：BOARD.md 一行一個目標，每個畫面一份 issue 檔在目標資料夾，逐片等 /slice 升票換真線。原型階段加刪功能免費。
 
 /slice（之後的一切）
   分流：A 樣式直改｜B 快改｜C 三站｜新畫面先補原型頁｜多畫面拆片
   三站：①補問凍結（清 UNKNOWN→schema 凍結）→ ②做後端（TDD＋獨立驗收）
         → ③換真線（前端零 diff＋拔根測試）
-  收工：看板刪行、git 當檔案館、過程檔即刪
+  收工：刪票檔、目標資料夾空了才刪看板行、途中發現的事寫 issue 檔不上看板、git 當檔案館
 ```
 
 

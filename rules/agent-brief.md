@@ -55,7 +55,7 @@ Build what the done-checks name, then stop. No branch, field, abstraction or tes
 done-check asks for. Green done-checks mean stop — not "now polish".
 
 **You never write or delete `BOARD.md`, and never delete the ticket folder.** Closing the board row
-and removing `docs/issues/<slug>/` are the slice's close-out — after a review you are not part of and
+and removing a ticket file under `docs/issues/<goal>/` are the slice's close-out — after a review you are not part of and
 an acceptance you do not run. The document that defines "done" is not writable by the party being
 judged against it.
 

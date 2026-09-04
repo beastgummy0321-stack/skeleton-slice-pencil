@@ -21,6 +21,11 @@
             "type": "command",
             "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/adr-index.mjs\" --hook",
             "timeout": 15
+          },
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/board-shape.mjs\" --hook",
+            "timeout": 10
           }
         ]
       }

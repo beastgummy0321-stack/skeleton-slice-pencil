@@ -17,7 +17,7 @@ Every post is named; a tier that is never dispatched is decoration.
 | produced-thing quoter | haiku | reads the artefact the change produced and quotes back the parts the ticket claims it changed |
 
 - Spawn subagents with the Agent tool and an explicit `model` — held by `ticket-fields`, which also blocks opus or fable at a ticket. Implementer and reviewer are different agents.
-- **Every dispatch is named.** A general-purpose dispatch either names its ticket (`docs/issues/<slug>/…md`, absolute path, nowhere else) or opens with its post in capitals: `LOG TRIAGE:`, `QUOTE:`, `WALK:`, `PROTOTYPE PAGE:`, `READ-ONLY:`, `PLAN REVIEW:`, `ROOT CAUSE (second red):`, `REVIEW (route C):`. Held by `ticket-fields`.
+- **Every dispatch is named.** A general-purpose dispatch either names its ticket (`docs/issues/<goal>/…md`, absolute path, nowhere else) or opens with its post in capitals: `LOG TRIAGE:`, `QUOTE:`, `WALK:`, `PROTOTYPE PAGE:`, `READ-ONLY:`, `PLAN REVIEW:`, `ROOT CAUSE (second red):`, `REVIEW (route C):`. Held by `ticket-fields`.
 - A re-dispatch is a new Agent call, never a message to the agent that failed: the context that produced the failure is part of the failure.
 - Escalate a tier only after two rounds with no progress on the same problem, never because a task feels important.
 - Main chat writes code only on /slice routes A/B.
@@ -54,7 +54,7 @@ Its output is shown to the user as a note before they approve — never a veto, 
 
 ## Spec before dispatch
 
-Main chat writes the ticket at /slice station ①, one per slice, at `docs/issues/<slug>/ticket.md` (a slice cut into several tickets numbers them `NN-<name>.md` from `01`). Four sections, all filled, held by the `ticket-fields` gate; `N/A + one reason` counts as filled; a field the ticket cannot answer is escalated, never filled:
+Main chat writes the ticket at /slice station ①, one per slice, at `docs/issues/<goal>/NN-<name>.md` under the board row it serves (numbered from `01`; an `issue-<name>.md` that graduates is renamed, never copied). Four sections, all filled, held by the `ticket-fields` gate; `N/A + one reason` counts as filled; a field the ticket cannot answer is escalated, never filled:
 
 - **What** — the contract, with a literal JSON example.
 - **How we know it's done** — checks that are runnable or would fail a test, each spelling out the gate command verbatim, including which test files it runs.
@@ -95,7 +95,7 @@ Tests are code someone maintains; more of them is not more safety.
 
 ## Tickets and parallel work
 
-- Work bigger than one ticket (the 大 route): Premise check → main chat writes `docs/issues/<slug>/spec.md` → Plan review → main chat cuts the spec vertically (schema → API → screen → test) into the four-section tickets above → the user approves the list → sequential Sonnet dispatch.
+- Work bigger than one ticket (the 大 route): Premise check → main chat writes `docs/issues/<goal>/spec.md` → Plan review → main chat cuts the spec vertically (schema → API → screen → test) into the four-section tickets above → the user approves the list → sequential Sonnet dispatch.
 - **Work sequentially.** Parallel worktrees only when two tickets touch no file in common *and* each is over half a day; agents stalling on notifications that never arrive is the largest time sink measured.
 - **Before sizing a ticket whose blast radius is unknown, main chat makes the change throwaway, runs the suite once, and reverts.** Minutes, no dispatch, no ticket; it replaces the most expensive kind of guess.
 - **A change that flips a behaviour globally lands in two tickets: the structure it needs, dormant, then the flip.** The dormant half changes nothing, so the existing suite green is its proof.

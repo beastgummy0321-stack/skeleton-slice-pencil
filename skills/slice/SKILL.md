@@ -20,7 +20,7 @@ description: 做下一片——初始化之後的一切開發入口：換真線�
 
 - 有 `[>]` → 先 `git status --short`：工作樹有未 commit 的改動＝上一個 session 的半成品，報站時一併白話講出來，問「留著給新的小幫手接手，還是丟掉重做」（預設：`git stash push -m <片名>` 收起來，新實作者從乾淨的樹開始——半成品也是壞掉的上下文的一種）。決定後才報站（「上次走到第②站，繼續嗎？」）→ 從卡點續跑。
 - 無 `[>]` 且使用者有新願望 → 第 2 節分流。
-- 無 `[>]` 且無願望 → 念 `[ ]` 清單問挑哪片。
+- 無 `[>]` 且無願望 → 念看板的目標行，挑定目標後念該資料夾的 `NN-*.md`／`issue-*.md` 問挑哪片。
 
 ## 2. 入口分流（agent 讀 code 後自行判定，不問使用者技術題）
 
@@ -29,8 +29,8 @@ description: 做下一片——初始化之後的一切開發入口：換真線�
 | A | 只動樣式／文案／間距 | 直接改 → lint → 完工回報（**不派小幫手走瀏覽器**：確認一個字改了比讀那個字還貴，使用者自己看一眼就夠）。動到「讀的字」照 /skeleton 第 4 節第 5 點過 humanizer。不進看板 |
 | B | Behaviour change; schema, module entry points, money and permission paths all untouched. **Default route.** | Confirm expected behaviour → edit → any branch/loop/money path gets one runnable check → machine gate (workflow.md Gate) → four-state spot check **only if UI changed** → acceptance-step walk (workflow.md Gate) → report. Not on board |
 | C | 只有這四類（加換真線）：schema／migration、模組邊界、金流、權限／租戶隔離 | 開片（或認領既有 `[ ]` 行）→ 三站 |
-| New screen or state | Page or user-visible state absent from the prototype **and needing new data** (schema field or action; screen-contract.md scope). No new data → route B | 先照 /skeleton 第 4 節同風格錨生成假資料版（含該節「原型天花板」）＋看板加行，再走 C |
-| 大 | 願望涉及 >1 畫面或預估 >1 票 | 願望超出現行憲法或模組圖 → 先回 **Gate A**（workflow.md）修憲；否則照 workflow.md「Tickets and parallel work」第一條：Premise check → 對話台寫 `docs/issues/<slug>/spec.md` → **Plan review** → 對話台切成四欄票 → 使用者點頭 → **循序**派 Sonnet 實作 |
+| New screen or state | Page or user-visible state absent from the prototype **and needing new data** (schema field or action; screen-contract.md scope). No new data → route B | 先照 /skeleton 第 4 節同風格錨生成假資料版（含該節「原型天花板」）＋目標資料夾加 `issue-<畫面>.md`，再走 C |
+| 大 | 願望涉及 >1 畫面或預估 >1 票 | 願望超出現行憲法或模組圖 → 先回 **Gate A**（workflow.md）修憲；否則照 workflow.md「Tickets and parallel work」第一條：Premise check → 對話台寫 `docs/issues/<目標>/spec.md` → **Plan review** → 對話台切成四欄票 → 使用者點頭 → **循序**派 Sonnet 實作 |
 
 **判定順序：A → B → C。** 砍願望的關卡在 workflow.md 的 Premise check 與 Gate A，不在分流表——
 分流表只決定怎麼做，不決定該不該做。
@@ -53,7 +53,7 @@ Record the route: first line of the A/B completion report and the C `slice-NN` c
 UNKNOWN 收錄門檻（防規劃無限延長）：只收不可逆表命中、或使用者看得到的行為差異；
 線外細節不列 UNKNOWN，實作時 agent 自決＋標 `ponytail:` 註解。
 每題過四格路由（/skeleton 第 0 節）：使用者不確定 → 先探路再問，禁追問第三次。
-關卡：UNKNOWN 清空 →（有動 schema 才凍結＋commit `slice-NN: schema frozen`）→ **全名掃描** → 開票 `docs/issues/<slug>/ticket.md`，四欄照 workflow.md「Spec before dispatch」；答不出的欄位升級，不得填空。
+關卡：UNKNOWN 清空 →（有動 schema 才凍結＋commit `slice-NN: schema frozen`）→ **全名掃描** → 開票 `docs/issues/<目標>/NN-<名>.md`（既有 `issue-<名>.md` 升票＝改名後填四欄），四欄照 workflow.md「Spec before dispatch」；答不出的欄位升級，不得填空。
 **開票前一步是掃描，不是回想。** 這片會「不再存在或改變意思」的每一個名字——表、欄位、函式、檔名、常數——各跑一次**不限目錄、不限副檔名**的全 repo 搜尋，命中清單原樣貼成 `## Shared files touched`。掃**會變的那個名字**，不是它所屬的東西。
 
 ### ② 做後端
@@ -77,14 +77,14 @@ Pull-out test (container-contract §6), non-core modules only: remove the module
 Fail = hidden coupling; fix until green. Core module → Playwright smoke + main screen loads instead.
 驗工單先由小幫手走一遍（workflow.md Gate）→ 使用者再玩一次 → 點頭。
 
-收工動作（一次做完）：BOARD.md 刪行｜commit `slice-NN done: <名>`｜
-刪本片票與過程檔（`docs/issues/<slug>/`、UNKNOWN 清單、草稿）｜問「接著做下一片＜名＞嗎？」
+收工動作（一次做完）：刪票檔與過程檔（UNKNOWN 清單、草稿）｜目標資料夾裡沒有票也沒有 issue 了才刪看板行｜
+commit `slice-NN done: <名>`｜做票途中發現而這張票沒修的事，各寫一份 `docs/issues/<目標>/issue-<名>.md`（成因／影響／`file:line`／`Status:`），看板不動｜問「接著做下一片＜名＞嗎？」
 
 ### C-舊（切片碰到違規老 code 時的附加規則）
 
 - 先拍照：characterization test 鎖住舊行為現狀（弄壞 → 紅 → 復原，證明測試有效）才准動手。
 - 絞殺者模式：新 code 照軌道長在 `src/modules/` 內；舊 code 不整修、不擴建。
   呼叫端逐一改指向新進入點。
-- 呼叫端歸零的舊 code 當片內刪除；歸不了零 → 列 BOARD.md 新 `[ ]` 行。
+- 呼叫端歸零的舊 code 當片內刪除；歸不了零 → 寫 `docs/issues/<目標>/issue-<名>.md`，看板不動。
   就地擴建舊 code 一律禁止。
 - 大爆炸重寫一律禁止；一片只遷一個畫面的份量。

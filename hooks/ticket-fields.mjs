@@ -7,6 +7,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { sweep } from './adr-index.mjs';
+import { sweepBoard, report as boardReport } from './board-shape.mjs';
 
 let payload;
 try { payload = JSON.parse(readFileSync(0, 'utf8')); } catch {
@@ -37,6 +38,15 @@ if (problems.length) {
 }
 if (warnings.length) process.stderr.write(`adr-sweep: ${warnings.map((w) => `\n  (warning) ${w}`).join('')}\n`);
 
+// The board is read by plan review and by every session's opening, and a board written by Bash
+// heredoc never passed the Write/Edit hook. Same moment as the ADR sweep, same reason: an agent
+// dispatched against a journal is an agent whose next finding lands in the journal.
+const boardProblems = sweepBoard(root);
+if (boardProblems.length) {
+  process.stderr.write(boardReport(boardProblems, 'BOARD.md') + 'Fix the board before dispatching; do not dispatch around it.\n');
+  process.exit(2);
+}
+
 // --- Model posts (workflow.md, "Who does what") ---------------------------------------------
 // A tier that is never dispatched is not a policy, it is decoration; a tier dispatched by
 // accident is a bill. Both are settled at this one moment, and prose in a rules file that no
@@ -64,7 +74,7 @@ const DECLARED_POST = /^[A-Z]{2}[^\n:]{0,40}:/m;
 const prompt = payload?.tool_input?.prompt ?? '';
 const strayTicket = prompt.match(/(?:[A-Za-z]:)?[\w./\\~-]*[/\\][\w-]+[/\\]ticket\.md/g)?.find((m) => !/docs[/\\]issues[/\\]/.test(m));
 if (strayTicket && (subagentType === '' || REQUIRES_EXPLICIT_MODEL.has(subagentType))) {
-  process.stderr.write(`ticket-fields: the dispatch names ${strayTicket}, which is not under docs/issues/<slug>/. Tickets live there and nowhere else, because that is the only path this gate reads.\n`);
+  process.stderr.write(`ticket-fields: the dispatch names ${strayTicket}, which is not under docs/issues/<slug>/. Tickets live there (under the goal's folder) and nowhere else, because that is the only path this gate reads.\n`);
   process.exit(2);
 }
 const named = prompt.match(/(?:[A-Za-z]:)?[\w./\\~-]*docs[/\\]issues[/\\][\w./\\-]+\.md/);

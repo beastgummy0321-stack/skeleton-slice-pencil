@@ -131,6 +131,15 @@ try {
   // proven red: before this gate existed, every one of these dispatched without a word.
   rmSync(join(root, 'docs/adr/0057-broken.md'));
 
+  // --- the board is swept here too -----------------------------------------------------------
+  // proven red: a 449-line board full of sections dispatched agents for weeks.
+  writeFileSync(join(root, 'BOARD.md'), '# 看板\n\n- [ ] G1 ｜ docs/issues/T1-tracer/\n\n## 仍然成立的事實\n\n三層花費相等\n');
+  const journal = run(`Ticket: ${rel}`);
+  expect(journal, 2, 'a board with prose on it blocks the dispatch');
+  contains(journal.stderr, 'board-shape', 'the block names the board gate');
+  writeFileSync(join(root, 'BOARD.md'), '# 看板\n\n- [>] G1 ｜ docs/issues/T1-tracer/ ｜ 站②\n');
+  expect(run(`Ticket: ${rel}`), 0, 'a board of rows dispatches');
+
   // --- the contradiction check is a fourth required section ------------------------------------
   // proven red: the T1 ticket that burned three agent rounds had all three fields and no section.
   write(FULL.slice(0, FULL.indexOf('## Contradiction check')));
